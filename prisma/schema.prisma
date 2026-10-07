@@ -1,0 +1,295 @@
+﻿// Abuja Life - Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Player {
+  id               String   @id @default(cuid())
+  email            String   @unique
+  username         String   @unique
+  displayName      String
+  passwordHash     String
+  gender           String
+  avatarUrl        String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  background       String   @default("poor")
+  backgroundLabel  String   @default("Poor Man Pikin")
+  aura             Int      @default(0)
+  steez            Int      @default(0)
+  composure        Int      @default(50)
+  hustle           Int      @default(10)
+  intelligence     Int      @default(10)
+  drivingSkill     Int      @default(0)
+  streetSense      Int      @default(10)
+  connectLevel     Int      @default(0)
+  health           Int      @default(100)
+  happiness        Int      @default(70)
+  walletBalance    BigInt   @default(0)
+  bankBalance      BigInt   @default(0)
+  savingsBalance   BigInt   @default(0)
+  bondsBalance     BigInt   @default(0)
+  totalNetWorth    BigInt   @default(0)
+  debt             BigInt   @default(0)
+  currentArea      String   @default("Nyanya")
+  homeArea         String   @default("Nyanya")
+  housingType      String   @default("face-me")
+  currentJob       String?
+  jobLocation      String?
+  performanceScore Int      @default(0)
+  shiftsCompleted  Int      @default(0)
+  hasVehicle       Boolean  @default(false)
+  vehicleType      String?
+  vehicleName      String?
+  hasBypass        Boolean  @default(false)
+  bypassRiskLevel  Int      @default(0)
+  aedcUnits        Int      @default(0)
+  educationLevel   String   @default("none")
+  university       String?
+  schoolType       String?
+  isOnline         Boolean  @default(false)
+  lastSeen         DateTime @default(now())
+  partnerId        String?
+  isVerified       Boolean  @default(false)
+  isBanned         Boolean  @default(false)
+  isSoftDeleted    Boolean  @default(false)
+  transactions     Transaction[]
+  properties       Property[]
+  jobHistory       JobHistory[]
+  notifications    Notification[]
+  sentMessages     Message[]       @relation("SentMessages")
+  receivedMessages Message[]       @relation("ReceivedMessages")
+  billboards       Billboard[]
+  electionVotes    ElectionVote[]
+  topups           Topup[]
+  candidates       Candidate[]
+  @@map("players")
+}
+
+model Transaction {
+  id            String   @id @default(cuid())
+  playerId      String
+  player        Player   @relation(fields: [playerId], references: [id])
+  type          String
+  amount        BigInt
+  description   String
+  category      String
+  balanceBefore BigInt
+  balanceAfter  BigInt
+  createdAt     DateTime @default(now())
+  @@map("transactions")
+}
+
+model Property {
+  id             String   @id @default(cuid())
+  name           String
+  type           String
+  area           String
+  weeklyRent     BigInt?
+  annualRent     BigInt?
+  buyPrice       BigInt?
+  moveInFee      BigInt?
+  agencyFee      BigInt?
+  cautionFee     BigInt?
+  legalFee       BigInt?
+  isForRent      Boolean  @default(true)
+  isForSale      Boolean  @default(false)
+  isOccupied     Boolean  @default(false)
+  isScamListing  Boolean  @default(false)
+  advertisedArea String?
+  actualArea     String?
+  ownerId        String?
+  tenantId       String?
+  owner          Player?  @relation(fields: [ownerId], references: [id])
+  createdAt      DateTime @default(now())
+  @@map("properties")
+}
+
+model Job {
+  id              String   @id @default(cuid())
+  title           String
+  category        String
+  location        String
+  venueName       String
+  payPerShift     BigInt
+  shiftDuration   Int
+  requiresVehicle Boolean  @default(false)
+  minHustle       Int      @default(0)
+  minIntelligence Int      @default(0)
+  minConnect      Int      @default(0)
+  isAvailable     Boolean  @default(true)
+  opensAt         Int?
+  closesAt        Int?
+  createdAt       DateTime @default(now())
+  history         JobHistory[]
+  @@map("jobs")
+}
+
+model JobHistory {
+  id           String    @id @default(cuid())
+  playerId     String
+  jobId        String
+  player       Player    @relation(fields: [playerId], references: [id])
+  job          Job       @relation(fields: [jobId], references: [id])
+  shiftsWorked Int       @default(0)
+  totalEarned  BigInt    @default(0)
+  performance  Int       @default(0)
+  startedAt    DateTime  @default(now())
+  endedAt      DateTime?
+  @@map("job_history")
+}
+
+model Location {
+  id           String   @id @default(cuid())
+  name         String
+  mapLabel     String
+  fullName     String
+  area         String
+  category     String
+  tier         Int      @default(1)
+  description  String?
+  openingTime  Int?
+  closingTime  Int?
+  minNetWorth  BigInt?
+  minAura      Int?
+  minConnect   Int?
+  isComingSoon Boolean  @default(false)
+  isNightOnly  Boolean  @default(false)
+  x            Float    @default(0)
+  y            Float    @default(0)
+  createdAt    DateTime @default(now())
+  @@map("locations")
+}
+
+model TransportEvent {
+  id          String   @id @default(cuid())
+  playerId    String
+  type        String
+  from        String
+  to          String
+  cost        BigInt
+  duration    Int
+  outcome     String
+  statChanges Json?
+  createdAt   DateTime @default(now())
+  @@map("transport_events")
+}
+
+model Billboard {
+  id            String   @id @default(cuid())
+  ownerId       String
+  owner         Player   @relation(fields: [ownerId], references: [id])
+  location      String
+  spotId        String   @unique
+  category      String
+  title         String
+  subtitle      String?
+  imageUrl      String?
+  pricePerWeek  BigInt
+  startDate     DateTime
+  endDate       DateTime
+  isActive      Boolean  @default(true)
+  impressions   Int      @default(0)
+  isPolitical   Boolean  @default(false)
+  candidateName String?
+  partySlogan   String?
+  createdAt     DateTime @default(now())
+  @@map("billboards")
+}
+
+model Election {
+  id            String   @id @default(cuid())
+  title         String
+  type          String
+  status        String   @default("upcoming")
+  campaignStart DateTime
+  votingStart   DateTime
+  votingEnd     DateTime
+  winnerId      String?
+  createdAt     DateTime @default(now())
+  candidates    Candidate[]
+  votes         ElectionVote[]
+  @@map("elections")
+}
+
+model Candidate {
+  id            String   @id @default(cuid())
+  electionId    String
+  election      Election @relation(fields: [electionId], references: [id])
+  playerId      String
+  player        Player   @relation(fields: [playerId], references: [id])
+  partyName     String
+  slogan        String
+  campaignFunds BigInt   @default(0)
+  voteCount     Int      @default(0)
+  billboardsUp  Int      @default(0)
+  flyersShared  Int      @default(0)
+  createdAt     DateTime @default(now())
+  @@map("candidates")
+}
+
+model ElectionVote {
+  id          String   @id @default(cuid())
+  electionId  String
+  election    Election @relation(fields: [electionId], references: [id])
+  voterId     String
+  voter       Player   @relation(fields: [voterId], references: [id])
+  candidateId String
+  createdAt   DateTime @default(now())
+  @@unique([electionId, voterId])
+  @@map("election_votes")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  playerId  String
+  player    Player   @relation(fields: [playerId], references: [id])
+  type      String
+  title     String
+  body      String
+  isRead    Boolean  @default(false)
+  data      Json?
+  createdAt DateTime @default(now())
+  @@map("notifications")
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  sender     Player   @relation("SentMessages", fields: [senderId], references: [id])
+  receiver   Player   @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  content    String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  @@map("messages")
+}
+
+model Topup {
+  id              String    @id @default(cuid())
+  playerId        String
+  player          Player    @relation(fields: [playerId], references: [id])
+  paystackRef     String    @unique
+  amountKobo      Int
+  gameNairaCredit BigInt
+  status          String    @default("pending")
+  createdAt       DateTime  @default(now())
+  verifiedAt      DateTime?
+  @@map("topups")
+}
+
+model GameStats {
+  id            String   @id @default(cuid())
+  playersOnline Int      @default(0)
+  totalPlayers  Int      @default(0)
+  visitsToday   Int      @default(0)
+  visitsAllTime Int      @default(0)
+  updatedAt     DateTime @updatedAt
+  @@map("game_stats")
+}
