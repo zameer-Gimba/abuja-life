@@ -11,14 +11,14 @@ Abuja Life is inspired by the life-simulation category and Abuja itself. Its wor
 
 ## Character backgrounds
 
-- **Rich Man Pikin** — higher starting resources, Aura and Connect; premium access.
+- **Rich Man Pikin** — higher starting resources, Aura and Connection; premium access.
 - **Poor Man Pikin** — lower starting resources with stronger early Hustle/Street Sense progression.
 
 Background is part of character creation and is persistent.
 
 ## Core attributes
 
-Aura, Steez, Composure, Hustle, Intelligence, Driving Skill, Street Sense, Connect, Health and Happiness.
+Aura, Steez, Composure, Hustle, Intelligence, Driving Skill, Street Sense, Connection, Health and Happiness.
 
 ## World model
 
