@@ -5,6 +5,38 @@ export const GAME_NAME = "Abuja Life"
 export const CURRENCY_SYMBOL = "N"
 export const CURRENCY_NAME = "Game Naira"
 
+// ── World Landmarks & Everyday Facilities ─────────────────
+export const WORLD_CATEGORIES = [
+  "landmark", "fuel_station", "hospital", "school", "bank", "market",
+  "mall", "restaurant", "hotel", "cinema", "mosque", "church",
+  "government", "transport_hub", "metro_station", "park", "golf",
+  "event_venue", "car_dealership", "power_facility",
+]
+
+export const LANDMARKS = [
+  { name: "Aso Rock", category: "landmark", area: "Asokoro", importance: "major" },
+  { name: "National Assembly", category: "government", area: "Central Area", importance: "major" },
+  { name: "National Mosque", category: "mosque", area: "Central Area", importance: "major" },
+  { name: "National Christian Centre", category: "church", area: "Central Area", importance: "major" },
+  { name: "City Gate", category: "landmark", area: "CBD", importance: "major" },
+  { name: "World Trade Center", category: "landmark", area: "CBD", importance: "major" },
+  { name: "Jabi Lake", category: "park", area: "Jabi", importance: "major" },
+  { name: "Millennium Park", category: "park", area: "Maitama", importance: "major" },
+  { name: "Berger Junction", category: "transport_hub", area: "Berger", importance: "major" },
+]
+
+export const EVERYDAY_FACILITIES = [
+  { category: "fuel_station", label: "Fuel Station", gameplay: "refuel_vehicle" },
+  { category: "hospital", label: "Hospital", gameplay: "healthcare" },
+  { category: "school", label: "School", gameplay: "education" },
+  { category: "bank", label: "Bank", gameplay: "finance" },
+  { category: "market", label: "Market", gameplay: "shopping" },
+  { category: "restaurant", label: "Restaurant", gameplay: "food" },
+  { category: "hotel", label: "Hotel", gameplay: "lodging_or_jobs" },
+  { category: "car_dealership", label: "Car Dealership", gameplay: "vehicle_purchase" },
+  { category: "power_facility", label: "Power Facility", gameplay: "utilities" },
+]
+
 // ── Districts & Housing Tiers ──────────────────────────────
 export const DISTRICTS = {
   DESTITUTE: ["Nyanya", "Mararaba", "Lugbe", "Mpape", "Karmo", "Pyakasa"],
