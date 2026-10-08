@@ -5,8 +5,8 @@
   --foreground: #10251a;
   --abuja-green: #16834b;
   --abuja-green-dark: #0d5f35;
-  --abuja-orange: #f28c28;
-  --abuja-orange-dark: #c96a0b;
+  --abuja-blue: #2563eb;
+  --abuja-blue-dark: #1d4ed8;
   --abuja-cream: #fffaf2;
   --abuja-border: #e7e2d8;
 }
@@ -16,8 +16,8 @@
   --color-foreground: var(--foreground);
   --color-abuja-green: var(--abuja-green);
   --color-abuja-green-dark: var(--abuja-green-dark);
-  --color-abuja-orange: var(--abuja-orange);
-  --color-abuja-orange-dark: var(--abuja-orange-dark);
+  --color-abuja-blue: var(--abuja-blue);
+  --color-abuja-blue-dark: var(--abuja-blue-dark);
   --color-abuja-cream: var(--abuja-cream);
   --color-abuja-border: var(--abuja-border);
   --font-sans: var(--font-geist-sans);
