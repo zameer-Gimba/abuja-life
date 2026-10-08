@@ -1,3 +1,4 @@
+import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
@@ -6,6 +7,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const username = String(body.username ?? "").trim().toLowerCase();
     const email = String(body.email ?? "").trim().toLowerCase();
+    const password = String(body.password ?? "");
     const background = body.background === "rich" ? "rich" : "poor";
 
     if (!/^[a-z0-9_]{3,20}$/.test(username)) {
@@ -13,6 +15,9 @@ export async function POST(request: Request) {
     }
     if (!/^\S+@\S+\.\S+$/.test(email) || email.length > 254) {
       return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
+    }
+    if (password.length < 8 || password.length > 128) {
+      return NextResponse.json({ error: "Password must be 8–128 characters." }, { status: 400 });
     }
 
     const existing = await db.player.findFirst({
@@ -24,13 +29,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: existing.username === username ? "That username is already in use." : "That email is already in use." }, { status: 409 });
     }
 
-    return NextResponse.json({
-      error: "Account persistence is ready for the authentication adapter. Password storage will be enabled with the project's approved auth provider before production.",
-      background,
-      username,
-      email,
-    }, { status: 501 });
+    const passwordHash = await bcrypt.hash(password, 12);
+    const rich = background === "rich";
+    const startingBalance = rich ? 500000n : 100000n;
+
+    const player = await db.player.create({
+      data: {
+        username,
+        email,
+        displayName: username,
+        passwordHash,
+        gender: "unspecified",
+        background,
+        backgroundLabel: rich ? "Rich Man Pikin" : "Poor Man Pikin",
+        currentArea: rich ? "Guzape" : "Nyanya",
+        homeArea: rich ? "Guzape" : "Nyanya",
+        aura: rich ? 15 : 0,
+        hustle: rich ? 5 : 15,
+        connectLevel: rich ? 10 : 0,
+        walletBalance: startingBalance,
+        totalNetWorth: startingBalance,
+      },
+      select: { id: true, username: true, email: true, background: true, backgroundLabel: true },
+    });
+
+    return NextResponse.json({ player }, { status: 201 });
   } catch {
-    return NextResponse.json({ error: "Unable to process the registration request." }, { status: 400 });
+    return NextResponse.json({ error: "Unable to create the account right now." }, { status: 500 });
   }
 }
