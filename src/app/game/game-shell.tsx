@@ -68,6 +68,7 @@ export default function GameShell({ player }: { player: Player }) {
   const [jobs, setJobs] = useState<Array<{ title: string; category: string; location: string; payPerShift: number; shiftHours: number; minHustle?: number; minIntelligence?: number; minConnect?: number; requiresVehicle?: boolean }>>([]);
   const [jobLoading, setJobLoading] = useState(false);
   const [jobNotice, setJobNotice] = useState("");
+  const [activeJob, setActiveJob] = useState(player.currentJob);
 
   const cash = useMemo(() => Number(balance).toLocaleString(), [balance]);
   const displayedNetWorth = useMemo(() => Number(netWorth).toLocaleString(), [netWorth]);
@@ -98,6 +99,7 @@ export default function GameShell({ player }: { player: Player }) {
       });
       const data = await response.json();
       setJobNotice(data.message ?? data.error ?? "Application completed.");
+      if (response.ok) setActiveJob(data.job);
     } catch {
       setJobNotice("Could not submit the application.");
     } finally {
@@ -219,9 +221,9 @@ export default function GameShell({ player }: { player: Player }) {
               </div>
               {!jobs.length && <p className="mt-6 text-sm text-slate-500">Select Jobs and refresh the board to load available work.</p>}
             </div>
-            {currentJob && <div className="rounded-3xl bg-slate-950 p-7 text-white">
+            {activeJob && <div className="rounded-3xl bg-slate-950 p-7 text-white">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-300">Current Job</p>
-              <h2 className="mt-2 text-2xl font-black">{currentJob}</h2>
+              <h2 className="mt-2 text-2xl font-black">{activeJob}</h2>
               <p className="mt-2 text-sm text-slate-400">Complete a shift to earn Game Naira and build your employment history.</p>
               <button onClick={completeShift} disabled={jobLoading} className="mt-5 rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white">{jobLoading ? "Processing..." : "Complete Shift"}</button>
             </div>}
