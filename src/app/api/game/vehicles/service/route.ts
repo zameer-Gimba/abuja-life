@@ -20,14 +20,14 @@ export async function POST(request: Request) {
     if (add <= 0) return NextResponse.json({error:"Your tank is already full."},{status:400});
     const cost=BigInt(calculateFuelCost(vehicle,add));
     if(player.walletBalance<cost) return NextResponse.json({error:"Not enough Game Naira for fuel."},{status:400});
-    const next=await db.$transaction(async tx=>{const p=await tx.player.update({where:{id:player.id},data:{vehicleFuel:{increment:add},walletBalance:{decrement:cost}}});await tx.transaction.create({data:{playerId:player.id,type:"expense",amount:cost,description:`Fuelled ${vehicle.name} (+${add}L)`,category:"vehicle",balanceBefore:player.walletBalance,balanceAfter:p.walletBalance}});return p;});
+    const next=await db.$transaction(async tx=>{const p=await tx.player.update({where:{id:player.id},data:{vehicleFuel:{increment:add},walletBalance:{decrement:cost},totalNetWorth:{decrement:cost}}});await tx.transaction.create({data:{playerId:player.id,type:"expense",amount:cost,description:`Fuelled ${vehicle.name} (+${add}L)`,category:"vehicle",balanceBefore:player.walletBalance,balanceAfter:p.walletBalance}});return p;});
     return NextResponse.json({message:`Added ${add}L of fuel.`,walletBalance:next.walletBalance.toString(),totalNetWorth:next.totalNetWorth.toString(),fuel:next.vehicleFuel,condition:next.vehicleCondition});
   }
   if(action==="maintain"){
     const cost=BigInt(calculateMaintenanceCost(vehicle,player.vehicleCondition));
     if(player.vehicleCondition>=100)return NextResponse.json({error:"Your vehicle is already in good condition."},{status:400});
     if(player.walletBalance<cost)return NextResponse.json({error:"Not enough Game Naira for maintenance."},{status:400});
-    const next=await db.$transaction(async tx=>{const p=await tx.player.update({where:{id:player.id},data:{vehicleCondition:100,walletBalance:{decrement:cost}}});await tx.transaction.create({data:{playerId:player.id,type:"expense",amount:cost,description:`Maintained ${vehicle.name}`,category:"vehicle",balanceBefore:player.walletBalance,balanceAfter:p.walletBalance}});return p;});
+    const next=await db.$transaction(async tx=>{const p=await tx.player.update({where:{id:player.id},data:{vehicleCondition:100,walletBalance:{decrement:cost},totalNetWorth:{decrement:cost}}});await tx.transaction.create({data:{playerId:player.id,type:"expense",amount:cost,description:`Maintained ${vehicle.name}`,category:"vehicle",balanceBefore:player.walletBalance,balanceAfter:p.walletBalance}});return p;});
     return NextResponse.json({message:`${vehicle.name} serviced successfully.`,walletBalance:next.walletBalance.toString(),totalNetWorth:next.totalNetWorth.toString(),fuel:next.vehicleFuel,condition:next.vehicleCondition});
   }
   return NextResponse.json({error:"Unknown vehicle action."},{status:400});
