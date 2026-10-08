@@ -9,6 +9,7 @@ const DURATIONS: Record<TravelMode, number> = {
   ALONE: 8,
   KEKE: 15,
   BOLT: 7,
+  INDRIVE: 8,
   METRO: 10,
 };
 
