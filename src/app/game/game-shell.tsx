@@ -53,7 +53,7 @@ const facilities = [
 
 const stats = [
   ["Aura", "aura"], ["Steez", "steez"], ["Composure", "composure"], ["Hustle", "hustle"],
-  ["Intelligence", "intelligence"], ["Driving", "drivingSkill"], ["Street Sense", "streetSense"], ["Connect", "connectLevel"],
+  ["Intelligence", "intelligence"], ["Driving", "drivingSkill"], ["Street Sense", "streetSense"], ["Connection", "connectLevel"],
 ] as const;
 
 export default function GameShell({ player }: { player: Player }) {
@@ -212,7 +212,7 @@ export default function GameShell({ player }: { player: Player }) {
           {view === "jobs" && <div className="space-y-5">
             <div className="rounded-3xl border border-slate-200 bg-white p-7">
               <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-                <div><p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Abuja Jobs Board</p><h1 className="mt-2 text-3xl font-black">Find your hustle.</h1><p className="mt-2 text-sm text-slate-500">Jobs use your skills, location, vehicle status and connections.</p></div>
+                <div><p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Abuja Jobs Board</p><h1 className="mt-2 text-3xl font-black">Find your hustle.</h1><p className="mt-2 text-sm text-slate-500">Jobs use your skills, location, vehicle status and Connection.</p></div>
                 <button onClick={loadJobs} disabled={jobLoading} className="rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white">{jobLoading ? "Loading..." : "Refresh jobs"}</button>
               </div>
               {jobNotice && <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800">{jobNotice}</div>}
@@ -233,7 +233,7 @@ export default function GameShell({ player }: { player: Player }) {
               <button onClick={completeShift} disabled={jobLoading} className="mt-5 rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white">{jobLoading ? "Processing..." : "Complete Shift"}</button>
             </div>}
           </div>}
-          {view !== "map" && view !== "jobs" && <div className="rounded-3xl border border-slate-200 bg-white p-7"><p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">{view}</p><h1 className="mt-2 text-3xl font-black capitalize">{view} is coming into the playable economy.</h1><p className="mt-4 max-w-2xl leading-7 text-slate-600">The dashboard shell is ready. This section will be connected to its server-authoritative game actions in the next build stages.</p></div>}
+          {view === "property" && <PropertyPanel onUpdate={(data) => { setBalance(BigInt(data.walletBalance)); setNetWorth(BigInt(data.netWorth)); setCurrentArea(data.housing.currentArea); setNotice(data.message); }} />}\n          {view !== "map" && view !== "jobs" && view !== "property" && <div className="rounded-3xl border border-slate-200 bg-white p-7"><p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">{view}</p><h1 className="mt-2 text-3xl font-black capitalize">{view} is coming into the playable economy.</h1><p className="mt-4 max-w-2xl leading-7 text-slate-600">The dashboard shell is ready. This section will be connected to its server-authoritative game actions in the next build stages.</p></div>}
         </section>
 
         <aside className="space-y-5">
