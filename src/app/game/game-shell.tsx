@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { calculateTravelCost, TRANSPORT_TYPES, type TravelMode } from "@/constants/game";
 import { ArrowRight, Banknote, Building2, Car, Compass, Fuel, Home, Map, Menu, Shield, Sparkles, Users, Wallet, X, Zap } from "lucide-react";
 
