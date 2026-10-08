@@ -74,6 +74,11 @@ export default function GameShell({ player }: { player: Player }) {
   const displayedNetWorth = useMemo(() => Number(netWorth).toLocaleString(), [netWorth]);
   const currentJob = player.currentJob;
 
+  function openView(nextView: string) {
+    setView(nextView);
+    if (nextView === "jobs") void loadJobs();
+  }
+
   async function loadJobs() {
     setJobLoading(true);
     try {
@@ -172,12 +177,12 @@ export default function GameShell({ player }: { player: Player }) {
         </div>
       </header>
 
-      {menuOpen && <div className="border-b border-slate-200 bg-white p-4 lg:hidden"><div className="grid grid-cols-2 gap-2">{["Map","Jobs","Property","Bank","Politics","Profile"].map((item) => <button key={item} onClick={() => { setView(item.toLowerCase()); setMenuOpen(false); }} className="rounded-xl border border-slate-200 p-3 text-left text-sm font-bold">{item}</button>)}</div></div>}
+      {menuOpen && <div className="border-b border-slate-200 bg-white p-4 lg:hidden"><div className="grid grid-cols-2 gap-2">{["Map","Jobs","Property","Bank","Politics","Profile"].map((item) => <button key={item} onClick={() => { openView(item.toLowerCase()); setMenuOpen(false); }} className="rounded-xl border border-slate-200 p-3 text-left text-sm font-bold">{item}</button>)}</div></div>}
 
       <div className="mx-auto grid max-w-[1500px] gap-5 p-4 sm:p-6 lg:grid-cols-[240px_1fr_300px]">
         <aside className="hidden rounded-2xl border border-slate-200 bg-white p-4 lg:block">
           <p className="px-2 text-xs font-bold uppercase tracking-[0.2em] text-slate-400">City menu</p>
-          <div className="mt-3 space-y-1">{[["map","Map",Map],["jobs","Jobs",Banknote],["property","Property",Home],["bank","Bank",Wallet],["politics","Politics",Users],["profile","Profile",Shield]].map(([id,label,Icon]) => <button key={String(id)} onClick={() => setView(String(id))} className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold ${view === id ? "bg-emerald-50 text-emerald-700" : "text-slate-600 hover:bg-slate-50"}`}><Icon size={17} />{String(label)}</button>)}</div>
+          <div className="mt-3 space-y-1">{[["map","Map",Map],["jobs","Jobs",Banknote],["property","Property",Home],["bank","Bank",Wallet],["politics","Politics",Users],["profile","Profile",Shield]].map(([id,label,Icon]) => <button key={String(id)} onClick={() => openView(String(id))} className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold ${view === id ? "bg-emerald-50 text-emerald-700" : "text-slate-600 hover:bg-slate-50"}`}><Icon size={17} />{String(label)}</button>)}</div>
           <div className="mt-8 rounded-2xl bg-slate-950 p-4 text-white"><p className="text-xs font-bold text-blue-300">CURRENT AREA</p><p className="mt-1 text-xl font-black">{currentArea}</p><p className="mt-1 text-xs font-semibold text-blue-300">{travelling ? "Travelling..." : `${TRANSPORT_TYPES[travelMode].label} selected`}</p><p className="mt-2 text-xs leading-5 text-slate-400">{areas.find(a => a.name === currentArea)?.note ?? "Your current location"}</p></div>
         </aside>
 
