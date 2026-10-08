@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   if (player.walletBalance < price) return NextResponse.json({ error: "Not enough Game Naira in your wallet." }, { status: 400 });
 
   const updated = await db.$transaction(async (tx) => {
-    const next = await tx.player.update({ where:{id:player.id}, data:{ hasVehicle:true, vehicleType:vehicle.type, vehicleName:vehicle.name, vehicleFuel:vehicle.tank, vehicleCondition:100, vehicleValue:price, walletBalance:{decrement:price}, totalNetWorth:{decrement:price} } });
+    const next = await tx.player.update({ where:{id:player.id}, data:{ hasVehicle:true, vehicleType:vehicle.type, vehicleName:vehicle.name, vehicleFuel:vehicle.tank, vehicleCondition:100, vehicleValue:price, walletBalance:{decrement:price}, totalNetWorth:{increment:0} } });
     await tx.transaction.create({ data:{ playerId:player.id, type:"expense", amount:price, description:`Purchased ${vehicle.name}`, category:"vehicle", balanceBefore:player.walletBalance, balanceAfter:next.walletBalance }});
     return next;
   });
