@@ -54,6 +54,7 @@ export default async function GamePage() {
         walletBalance: player.walletBalance.toString(),
         bankBalance: player.bankBalance.toString(),
         totalNetWorth: player.totalNetWorth.toString(),
+        vehicleValue: player.vehicleValue.toString(),
       }}
     />
   );
