@@ -65,9 +65,65 @@ export default function GameShell({ player }: { player: Player }) {
   const [travelling, setTravelling] = useState(false);
   const [balance, setBalance] = useState(BigInt(player.walletBalance));
   const [netWorth, setNetWorth] = useState(BigInt(player.totalNetWorth));
+  const [jobs, setJobs] = useState<Array<{ title: string; category: string; location: string; payPerShift: number; shiftHours: number; minHustle?: number; minIntelligence?: number; minConnect?: number; requiresVehicle?: boolean }>>([]);
+  const [jobLoading, setJobLoading] = useState(false);
+  const [jobNotice, setJobNotice] = useState("");
 
   const cash = useMemo(() => Number(balance).toLocaleString(), [balance]);
   const displayedNetWorth = useMemo(() => Number(netWorth).toLocaleString(), [netWorth]);
+  const currentJob = player.currentJob;
+
+  async function loadJobs() {
+    setJobLoading(true);
+    try {
+      const response = await fetch("/api/game/jobs");
+      const data = await response.json();
+      if (response.ok) setJobs(data.jobs ?? []);
+      else setJobNotice(data.error ?? "Could not load jobs.");
+    } catch {
+      setJobNotice("Could not connect to the jobs board.");
+    } finally {
+      setJobLoading(false);
+    }
+  }
+
+  async function applyForJob(title: string) {
+    setJobLoading(true);
+    setJobNotice("");
+    try {
+      const response = await fetch("/api/game/jobs/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+      const data = await response.json();
+      setJobNotice(data.message ?? data.error ?? "Application completed.");
+    } catch {
+      setJobNotice("Could not submit the application.");
+    } finally {
+      setJobLoading(false);
+    }
+  }
+
+  async function completeShift() {
+    setJobLoading(true);
+    setJobNotice("");
+    try {
+      const response = await fetch("/api/game/jobs/shift", { method: "POST" });
+      const data = await response.json();
+      if (response.ok) {
+        setBalance(BigInt(data.walletBalance));
+        setNetWorth(BigInt(data.totalNetWorth));
+        setJobNotice(data.message);
+      } else {
+        setJobNotice(data.error ?? "Could not complete shift.");
+      }
+    } catch {
+      setJobNotice("Could not connect to the jobs system.");
+    } finally {
+      setJobLoading(false);
+    }
+  }
 
   async function travel(area: string) {
     if (area === currentArea || travelling) return;
@@ -146,7 +202,31 @@ export default function GameShell({ player }: { player: Player }) {
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{facilities.map(([label,Icon,note]) => <div key={String(label)} className="rounded-2xl border border-slate-200 bg-white p-5"><Icon className="text-blue-600" size={20} /><p className="mt-4 font-black">{String(label)}</p><p className="mt-1 text-xs leading-5 text-slate-500">{String(note)}</p></div>)}</div>
           </div>}
 
-          {view !== "map" && <div className="rounded-3xl border border-slate-200 bg-white p-7"><p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">{view}</p><h1 className="mt-2 text-3xl font-black capitalize">{view} is coming into the playable economy.</h1><p className="mt-4 max-w-2xl leading-7 text-slate-600">The dashboard shell is ready. This section will be connected to its server-authoritative game actions in the next build stages.</p></div>}
+          {view === "jobs" && <div className="space-y-5">
+            <div className="rounded-3xl border border-slate-200 bg-white p-7">
+              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+                <div><p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Abuja Jobs Board</p><h1 className="mt-2 text-3xl font-black">Find your hustle.</h1><p className="mt-2 text-sm text-slate-500">Jobs use your skills, location, vehicle status and connections.</p></div>
+                <button onClick={loadJobs} disabled={jobLoading} className="rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white">{jobLoading ? "Loading..." : "Refresh jobs"}</button>
+              </div>
+              {jobNotice && <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800">{jobNotice}</div>}
+              <div className="mt-6 grid gap-3 md:grid-cols-2">
+                {jobs.map((job) => <div key={job.title} className="rounded-2xl border border-slate-200 p-5">
+                  <div className="flex items-start justify-between gap-3"><div><p className="font-black">{job.title}</p><p className="mt-1 text-xs font-semibold text-slate-500">{job.location} · {job.shiftHours}h shift</p></div><span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold uppercase text-emerald-700">{job.category}</span></div>
+                  <p className="mt-4 text-xl font-black">₦{job.payPerShift.toLocaleString()} <span className="text-xs font-semibold text-slate-400">/ shift</span></p>
+                  <p className="mt-2 text-xs text-slate-500">Requirements: Hustle {job.minHustle ?? 0} · Intelligence {job.minIntelligence ?? 0} · Connect {job.minConnect ?? 0}{job.requiresVehicle ? " · Vehicle" : ""}</p>
+                  <button onClick={() => applyForJob(job.title)} disabled={jobLoading} className="mt-4 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold hover:bg-slate-50">Apply</button>
+                </div>)}
+              </div>
+              {!jobs.length && <p className="mt-6 text-sm text-slate-500">Select Jobs and refresh the board to load available work.</p>}
+            </div>
+            {currentJob && <div className="rounded-3xl bg-slate-950 p-7 text-white">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-300">Current Job</p>
+              <h2 className="mt-2 text-2xl font-black">{currentJob}</h2>
+              <p className="mt-2 text-sm text-slate-400">Complete a shift to earn Game Naira and build your employment history.</p>
+              <button onClick={completeShift} disabled={jobLoading} className="mt-5 rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white">{jobLoading ? "Processing..." : "Complete Shift"}</button>
+            </div>}
+          </div>}
+          {view !== "map" && view !== "jobs" && <div className="rounded-3xl border border-slate-200 bg-white p-7"><p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">{view}</p><h1 className="mt-2 text-3xl font-black capitalize">{view} is coming into the playable economy.</h1><p className="mt-4 max-w-2xl leading-7 text-slate-600">The dashboard shell is ready. This section will be connected to its server-authoritative game actions in the next build stages.</p></div>}
         </section>
 
         <aside className="space-y-5">
