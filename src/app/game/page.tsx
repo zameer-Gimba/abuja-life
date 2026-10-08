@@ -38,6 +38,10 @@ export default async function GamePage() {
       currentJob: true,
       hasVehicle: true,
       vehicleName: true,
+      vehicleType: true,
+      vehicleFuel: true,
+      vehicleCondition: true,
+      vehicleValue: true,
     },
   });
 
