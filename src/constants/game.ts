@@ -58,6 +58,22 @@ export const HOUSING_TYPES = {
 }
 
 // ── Transport ──────────────────────────────────────────────
+export const TRAVEL_AREAS = ["Nyanya", "Kubwa", "Gwarinpa", "Jabi", "Wuse 2", "Central Area", "Guzape", "Maitama"] as const
+
+export const TRAVEL_AREA_DISTANCE: Record<string, number> = {
+  Nyanya: 1,
+  Kubwa: 2,
+  Gwarinpa: 2,
+  Jabi: 3,
+  "Wuse 2": 3,
+  "Central Area": 4,
+  Guzape: 4,
+  Maitama: 5,
+}
+
+export const TRAVEL_MODES = ["BUS_STOP", "ALONE", "KEKE", "BOLT", "METRO"] as const
+export type TravelMode = (typeof TRAVEL_MODES)[number]
+
 export const TRANSPORT_TYPES = {
   BUS_STOP: { label: "Bus Stop", description: "Share a commercial car with strangers", baseCost: 150 },
   ALONE: { label: "Alone", description: "Charter the whole car solo — premium", baseCost: 800 },
@@ -65,6 +81,14 @@ export const TRANSPORT_TYPES = {
   BOLT: { label: "Bolt / Uber", description: "Ride-hailing app — comfortable", baseCost: 1200 },
   METRO: { label: "Abuja Metro", description: "Light rail — cheap and modern", baseCost: 200 },
   ONE_CHANCE: { label: "One Chance ⚠️", description: "Looks like a bus stop... but it's not.", baseCost: 0 },
+}
+
+export function calculateTravelCost(from: string, to: string, mode: TravelMode) {
+  const transport = TRANSPORT_TYPES[mode]
+  const fromDistance = TRAVEL_AREA_DISTANCE[from] ?? 1
+  const toDistance = TRAVEL_AREA_DISTANCE[to] ?? 1
+  const distanceFactor = Math.max(1, Math.abs(fromDistance - toDistance) + 1)
+  return transport.baseCost * distanceFactor
 }
 
 // ── Berger — The Mother of All Junctions ──────────────────
