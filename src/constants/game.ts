@@ -3,7 +3,7 @@
 
 export const GAME_NAME = "Abuja Life"
 export const CURRENCY_SYMBOL = "N"
-export const CURRENCY_NAME = "ABJ Naira"
+export const CURRENCY_NAME = "Game Naira"
 
 // ── Districts & Housing Tiers ──────────────────────────────
 export const DISTRICTS = {
@@ -125,10 +125,12 @@ export const RANDOM_EVENTS = [
 ]
 
 // ── Election Types ─────────────────────────────────────────
+export const ELECTION_CYCLE_MONTHS = 4
+
 export const ELECTION_TYPES = {
-  AMAC: { label: "AMAC Chairman", scope: "Abuja Municipal", campaignDays: 14, minConnect: 30, minCampaignBudget: 500000 },
-  FCT_MINISTER: { label: "FCT Minister", scope: "Federal Capital Territory", campaignDays: 30, minConnect: 60, minCampaignBudget: 5000000 },
-  SENATORIAL: { label: "FCT Senate Seat", scope: "National", campaignDays: 30, minConnect: 80, minCampaignBudget: 10000000 },
+  PRESIDENT: { label: "Abuja President", scope: "Abuja Life", campaignDays: 30, minConnect: 80, minCampaignBudget: 10000000 },
+  FCT_GOVERNOR: { label: "FCT Governor", scope: "Federal Capital Territory", campaignDays: 30, minConnect: 60, minCampaignBudget: 5000000 },
+  FCT_CHAIRMAN: { label: "FCT Chairman", scope: "Municipal", campaignDays: 14, minConnect: 30, minCampaignBudget: 500000 },
 }
 
 // ── Topup Packages ─────────────────────────────────────────
