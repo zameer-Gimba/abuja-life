@@ -70,3 +70,12 @@ One ZeptoMail account will support transactional email such as verification, OTP
 ## Disclaimer direction
 
 Abuja Life is fictional entertainment software inspired by Abuja/FCT. Real locations, institutions, businesses, organizations and political structures may be adapted, simplified or fictionalized. Their appearance does not imply endorsement, sponsorship or affiliation. Political offices and election mechanics are game systems and are not representations of actual governmental processes. Game Naira has no cash value.
+
+
+## Vehicle & Driving Vertical Slice
+- Vehicle ownership is persistent player state: type, name, fuel, condition, value.
+- Vehicle purchases are server-authoritative and recorded in the transaction ledger.
+- Vehicle ownership supports vehicle-required jobs and future driving progression.
+- Fuel and maintenance are recurring Game Naira expenses.
+- Vehicle purchase converts cash into an owned asset; the current net-worth model therefore does not subtract the purchase price from net worth.
+- Real-world driving/drifting is not instructional; Abuja Drifters is represented as fictional game progression and events.
