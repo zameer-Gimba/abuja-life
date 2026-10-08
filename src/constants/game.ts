@@ -71,14 +71,15 @@ export const TRAVEL_AREA_DISTANCE: Record<string, number> = {
   Maitama: 5,
 }
 
-export const TRAVEL_MODES = ["BUS_STOP", "ALONE", "KEKE", "BOLT", "METRO"] as const
+export const TRAVEL_MODES = ["BUS_STOP", "ALONE", "KEKE", "BOLT", "INDRIVE", "METRO"] as const
 export type TravelMode = (typeof TRAVEL_MODES)[number]
 
 export const TRANSPORT_TYPES = {
   BUS_STOP: { label: "Bus Stop", description: "Share a commercial car with strangers", baseCost: 150 },
   ALONE: { label: "Alone", description: "Charter the whole car solo — premium", baseCost: 800 },
   KEKE: { label: "Keke NAPEP", description: "Tricycle taxi — common in outskirts", baseCost: 100 },
-  BOLT: { label: "Bolt / Uber", description: "Ride-hailing app — comfortable", baseCost: 1200 },
+  BOLT: { label: "Bolt", description: "Ride-hailing app — comfortable", baseCost: 1200 },
+  INDRIVE: { label: "inDrive", description: "Ride-hailing with negotiated fares", baseCost: 1100 },
   METRO: { label: "Abuja Metro", description: "Light rail — cheap and modern", baseCost: 200 },
   ONE_CHANCE: { label: "One Chance ⚠️", description: "Looks like a bus stop... but it's not.", baseCost: 0 },
 }
