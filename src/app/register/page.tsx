@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import { ArrowLeft, ArrowRight, LockKeyhole, Map, ShieldCheck, UserRound } from "lucide-react";
 
 const backgrounds = [
@@ -10,6 +10,32 @@ const backgrounds = [
 
 export default function RegisterPage() {
   const [background, setBackground] = useState("poor");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setBusy(true);
+    const form = new FormData(event.currentTarget);
+    const response = await fetch("/api/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: form.get("username"),
+        email: form.get("email"),
+        password: form.get("password"),
+        background,
+      }),
+    });
+    const result = await response.json();
+    setBusy(false);
+    if (!response.ok) {
+      setError(result.error ?? "Unable to create your account.");
+      return;
+    }
+    window.location.href = "/login?created=1";
+  }
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -36,9 +62,9 @@ export default function RegisterPage() {
         </aside>
 
         <section className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm sm:p-9">
-          <div><p className="text-sm font-bold uppercase tracking-[0.2em] text-emerald-600">Create account</p><h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950">Choose your beginning.</h2><p className="mt-3 text-sm leading-6 text-slate-500">Registration will be connected to the persistent game account system in the next implementation stage.</p></div>
+          <div><p className="text-sm font-bold uppercase tracking-[0.2em] text-emerald-600">Create account</p><h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950">Choose your beginning.</h2><p className="mt-3 text-sm leading-6 text-slate-500">Your account is stored persistently, with your birth roll and starting state recorded from the moment you enter the city.</p></div>
 
-          <form className="mt-8 space-y-6">
+          <form onSubmit={submit} className="mt-8 space-y-6">
             <div className="grid gap-5 sm:grid-cols-2">
               <label className="block"><span className="text-sm font-bold text-slate-700">Username</span><input name="username" placeholder="e.g. AbujaBoy" className="mt-2 h-12 w-full rounded-xl border border-slate-200 px-4 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" /></label>
               <label className="block"><span className="text-sm font-bold text-slate-700">Email</span><input type="email" name="email" placeholder="you@example.com" className="mt-2 h-12 w-full rounded-xl border border-slate-200 px-4 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" /></label>
@@ -58,12 +84,14 @@ export default function RegisterPage() {
               </div>
             </fieldset>
 
+            {error && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</p>}
+
             <label className="flex items-start gap-3 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
               <input type="checkbox" className="mt-1 accent-blue-600" required />
               <span>I understand that Abuja Life is a fictional simulation, Game Naira has no cash value, and the birth roll becomes fixed after account creation.</span>
             </label>
 
-            <button type="submit" className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 font-bold text-white shadow-lg shadow-emerald-600/15 transition hover:bg-emerald-700">Create Abuja Life Account <ArrowRight size={18} /></button>
+            <button disabled={busy} type="submit" className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 font-bold text-white shadow-lg shadow-emerald-600/15 transition hover:bg-emerald-700">{busy ? "Creating account..." : "Create Abuja Life Account"} <ArrowRight size={18} /></button>
           </form>
         </section>
       </div>
