@@ -46,6 +46,9 @@ model Player {
   hasVehicle       Boolean  @default(false)
   vehicleType      String?
   vehicleName      String?
+  vehicleFuel      Int      @default(100)
+  vehicleCondition Int      @default(100)
+  vehicleValue     BigInt   @default(0)
   hasBypass        Boolean  @default(false)
   bypassRiskLevel  Int      @default(0)
   aedcUnits        Int      @default(0)
