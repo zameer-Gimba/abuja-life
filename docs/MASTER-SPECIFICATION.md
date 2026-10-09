@@ -79,3 +79,26 @@ Abuja Life is fictional entertainment software inspired by Abuja/FCT. Real locat
 - Fuel and maintenance are recurring Game Naira expenses.
 - Vehicle purchase converts cash into an owned asset; the current net-worth model therefore does not subtract the purchase price from net worth.
 - Real-world driving/drifting is not instructional; Abuja Drifters is represented as fictional game progression and events.
+
+## Persistent 3D World Foundation
+
+### Visual direction
+- The game world uses a stable, authored 3D/isometric environment. Do not generate a new character, outfit, house, or district layout every time a camera angle or scene changes.
+- Character identity and wardrobe are persisted on the Player record using stable preset IDs and appearance fields.
+- Starting homes are background-specific: Poor Man Pikin starts in a shared single room in Nyanya with two stationary dummy roommates; Rich Man Pikin starts in a Guzape mansion scene with a driveway/garage slot.
+- Roommates are non-player scene actors. They must never be mistaken for, overwrite, or control the player character.
+- Outfit keys change only through an explicit wardrobe purchase/equip action; changing location must not change clothes.
+- Character presets use authored Nigerian appearance options, including natural hair styles and a range of brown skin tones. Do not infer wealth, personality, or role from skin tone. The starter defaults are only defaults, not the limit of the eventual character creator.
+- Height, body type, hairstyle, skin tone, and hair color are stable saved attributes. Scene changes may not alter them.
+
+### District art direction
+Districts load an explicit world profile from `src/constants/world.ts`. Maitama and Central Area use higher-end diplomatic/civic architecture, broader roads and formal landscaping. Commercial and planned residential districts use their own profiles. Kubwa and Nyanya use mixed suburban density, while Mararaba uses a denser peri-urban roadside-commerce profile. These are stylized game-art directions, not claims that every real street is uniform.
+
+### Asset consistency contract
+1. Each scene uses stable model, material, outfit and environment IDs.
+2. Camera movement changes only the view, never the underlying model or outfit.
+3. Appearance randomness, where introduced, is generated once at character creation and saved as `appearanceSeed`; never reroll per render.
+4. The scene registry and persisted preset IDs are the source of truth.
+5. Audio is location/state-aware and has a mute/volume control; ambience changes by scene instead of looping one generic track everywhere.
+6. A first playable slice must prove home interior, player movement, interaction, home exit, district transition and saved identity before broadening the map.
+
