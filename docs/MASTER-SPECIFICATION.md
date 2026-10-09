@@ -102,3 +102,17 @@ Districts load an explicit world profile from `src/constants/world.ts`. Maitama 
 5. Audio is location/state-aware and has a mute/volume control; ambience changes by scene instead of looping one generic track everywhere.
 6. A first playable slice must prove home interior, player movement, interaction, home exit, district transition and saved identity before broadening the map.
 
+### Gender and character representation
+- Gender is selected at character creation and stored persistently.
+- The first character presets are distinct authored male and female adult character models; a female selection must resolve to a clearly female character model, not reuse the male silhouette with a different label.
+- Gender, body proportions, height, skin tone, hair style/color and outfit are independent persisted appearance attributes. They remain stable when travelling or changing camera angle.
+- Nigerian appearance options should include a thoughtful range of brown skin tones and locally plausible natural hairstyles. Avoid treating any single look as the only Nigerian look or using skin tone as a proxy for status.
+
+### Population, time and nightlife
+- Pedestrian counts, NPC types, lighting and ambient sound are controlled by the district profile and in-game time, using stable spawn points and deterministic placement.
+- Maitama and Asokoro's quieter residential/diplomatic streets should have sparse foot traffic, security presence and occasional vehicles rather than crowds on every road.
+- Commercial districts such as Central Area and Wuse 2 can be busier, while Nyanya, Kubwa and Mararaba have their own distinct street activity and density patterns.
+- Wuse 2 around Aminu Kano Crescent has a fictional nightlife corridor, including adult nightlife workers as non-explicit ambient NPCs, club patrons, venue staff and drivers. They are contextual background characters, not explicit sexual content or a sexual-service mechanic in the initial build.
+- Include a fictional Wuse 2 nightclub with its own interior, opening hours, crowd profile, lighting and audio profile. All game audio has player-accessible mute and volume controls.
+- These are authored fictional game representations of real areas, not assertions that every street or resident behaves identically.
+
