@@ -9,7 +9,11 @@ export async function POST(request: Request) {
     const email = String(body.email ?? "").trim().toLowerCase();
     const password = String(body.password ?? "");
     const background = body.background === "rich" ? "rich" : "poor";
+    const gender = body.gender === "female" ? "female" : body.gender === "male" ? "male" : "";
 
+    if (!gender) {
+      return NextResponse.json({ error: "Choose a male or female character." }, { status: 400 });
+    }
     if (!/^[a-z0-9_]{3,20}$/.test(username)) {
       return NextResponse.json({ error: "Username must be 3–20 characters using letters, numbers or underscores." }, { status: 400 });
     }
@@ -39,21 +43,21 @@ export async function POST(request: Request) {
         email,
         displayName: username,
         passwordHash,
-        gender: "unspecified",
+        gender,
         background,
         backgroundLabel: rich ? "Rich Man Pikin" : "Poor Man Pikin",
         currentArea: rich ? "Guzape" : "Nyanya",
         homeArea: rich ? "Guzape" : "Nyanya",
         homeSceneId: rich ? "guzape_mansion_v1" : "nyanya_shared_room_v1",
-        characterPresetId: "nigerian_young_adult_v1",
+        characterPresetId: gender === "female" ? "nigerian_female_young_adult_v1" : "nigerian_male_young_adult_v1",
         skinTone: "medium_brown",
-        hairstyle: rich ? "low_fade_v1" : "low_cut_v1",
+        hairstyle: gender === "female" ? (rich ? "natural_twist_out_v1" : "natural_puff_v1") : (rich ? "low_fade_v1" : "low_cut_v1"),
         hairColor: "black",
-        bodyType: "average",
-        heightCm: 170,
+        bodyType: gender === "female" ? "female_average_v1" : "male_average_v1",
+        heightCm: gender === "female" ? 165 : 172,
         appearanceSeed: 1,
-        outfitTop: rich ? "polo_navy_v1" : "tee_cream_v1",
-        outfitBottom: rich ? "chinos_sand_v1" : "jeans_dark_v1",
+        outfitTop: gender === "female" ? (rich ? "blouse_lilac_v1" : "tee_rose_v1") : (rich ? "polo_navy_v1" : "tee_cream_v1"),
+        outfitBottom: gender === "female" ? (rich ? "trousers_charcoal_v1" : "jeans_dark_v1") : (rich ? "chinos_sand_v1" : "jeans_dark_v1"),
         outfitShoes: rich ? "sneakers_white_v1" : "sneakers_black_v1",
         outfitOuterwear: "none",
         aura: rich ? 15 : 0,
