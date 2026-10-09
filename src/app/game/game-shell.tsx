@@ -286,7 +286,7 @@ export default function GameShell({ player }: { player: Player }) {
           <div className="rounded-xl border border-white/70 bg-white/85 px-3 py-2 text-right shadow-md backdrop-blur">
             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Character</p>
             <p className="text-xs font-black">{player.displayName}</p>
-            <p className="text-[10px] text-slate-500">Aura {aura} · Connection {connection}</p>
+            <p className="text-[10px] text-slate-500">Aura {aura} · Connection {connection}</p>{hasVehicle && <p className="mt-1 text-[10px] font-semibold text-emerald-700">Car fuel: {vehicleFuel} L</p>}
           </div>
           <button onClick={() => {
             if (worldScene === "home") setWorldScene("street");
