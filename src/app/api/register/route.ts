@@ -6,7 +6,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const username = String(body.username ?? "").trim().toLowerCase();
-    const email = String(body.email ?? "").trim().toLowerCase();
+    const providedEmail = String(body.email ?? "").trim().toLowerCase();
     const password = String(body.password ?? "");
     const background = body.background === "rich" ? "rich" : "poor";
     const gender = body.gender === "female" ? "female" : body.gender === "male" ? "male" : "";
@@ -17,9 +17,12 @@ export async function POST(request: Request) {
     if (!/^[a-z0-9_]{3,20}$/.test(username)) {
       return NextResponse.json({ error: "Username must be 3–20 characters using letters, numbers or underscores." }, { status: 400 });
     }
-    if (!/^\S+@\S+\.\S+$/.test(email) || email.length > 254) {
-      return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
+    if (providedEmail && (!/^\\S+@\\S+\\.\\S+$/.test(providedEmail) || providedEmail.length > 254)) {
+      return NextResponse.json({ error: "Enter a valid email address or leave it blank for now." }, { status: 400 });
     }
+    // Email is optional at signup; a reserved .invalid address is used until the player adds a real one.
+    // This address cannot receive email and is not presented as the player real address.
+    const email = providedEmail || `${username}@players.abujalife.invalid`;
     if (password.length < 8 || password.length > 128) {
       return NextResponse.json({ error: "Password must be 8–128 characters." }, { status: 400 });
     }
