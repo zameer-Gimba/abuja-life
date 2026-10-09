@@ -441,7 +441,7 @@ function StreetScene({ look, area, onPosition }: { look: CharacterLook; area: st
     { startX: 9, z: 1.45, speed: -1.8, color: "#477c65", roofColor: "#384b51" },
     { startX: -4, z: 1.45, speed: -2.5, color: "#ece6d8", roofColor: "#536778" },
   ];
-  const people = isQuiet ? [
+  const people: AmbientPedestrianProps[] = isQuiet ? [
     { x: -8, z: -5.3, shirt: "#276f58", trousers: "#26364a", skin: "#75462f", hair: "#181513", walking: false },
     { x: 6, z: 5.25, shirt: "#293d7a", trousers: "#d2b88d", skin: "#a66e49", hair: "#171514", gender: "female", hairStyle: "braids", waving: true },
   ] : isWuse ? [
@@ -474,7 +474,7 @@ function StreetScene({ look, area, onPosition }: { look: CharacterLook; area: st
       <mesh position={[0, 0.09, -4.9]} receiveShadow><boxGeometry args={[36, 0.18, 1.7]} /><meshStandardMaterial color="#b9b3a4" roughness={1} /></mesh>
       <mesh position={[0, 0.09, 4.9]} receiveShadow><boxGeometry args={[36, 0.18, 1.7]} /><meshStandardMaterial color="#b9b3a4" roughness={1} /></mesh>
       {Array.from({ length: 16 }, (_, i) => <mesh key={i} position={[-16 + i * 2.1, 0.055, 0]}><boxGeometry args={[0.95, 0.035, 0.1]} /><meshStandardMaterial color="#eee9d9" /></mesh>)}
-      {buildings.map((building) => <StreetBuilding key={building.label} {...building} />)}
+      {buildings.map((building, index) => <StreetBuilding key={`${building.label}-${index}`} {...building} />)}
       <group position={[-16, 0, -5.5]}>
         <mesh position={[0, 1.3, 0]}><cylinderGeometry args={[0.075, 0.09, 2.6, 8]} /><meshStandardMaterial color="#484d52" /></mesh>
         <mesh position={[0.3, 2.55, 0]} rotation={[0, 0, -0.2]}><boxGeometry args={[0.65, 0.08, 0.08]} /><meshStandardMaterial color="#484d52" /></mesh>
