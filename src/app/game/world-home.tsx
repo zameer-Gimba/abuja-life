@@ -594,11 +594,6 @@ export default function WorldHome({ look, sceneId, immersive = false, worldScene
   const [moveTarget, setMoveTarget] = useState<{ x: number; z: number } | null>(null);
   const homeTitle = worldScene === "mosque" ? "ABUJA NATIONAL MOSQUE" : worldScene === "street" ? `${area.toUpperCase()} STREET` : sceneId === "guzape_mansion_v1" ? "GUZAPE MANSION" : "NYANYA SHARED ROOM";
 
-  useEffect(() => {
-    setMoveTarget(null);
-    setPosition({ x: 0, z: 0 });
-  }, [worldScene, area, sceneId]);
-
   const positionLabel = useMemo(() => `Room position: ${position.x.toFixed(1)}, ${position.z.toFixed(1)}`, [position]);
 
   return (
