@@ -210,7 +210,7 @@ export function Character({ look, onPosition, moveTarget, streetMode = false, sh
     moveTargetRef.current = new THREE.Vector3(
       THREE.MathUtils.clamp(moveTarget.x, streetMode ? -8 : -3.35, streetMode ? 8 : 3.35),
       0,
-      THREE.MathUtils.clamp(moveTarget.z, streetMode ? -3.4 : -3.3, streetMode ? 3.4 : 3.25),
+      THREE.MathUtils.clamp(moveTarget.z, streetMode ? -5.6 : -3.3, streetMode ? 5.6 : 3.25),
     );
   }, [moveTarget?.x, moveTarget?.z, streetMode]);
 
@@ -244,7 +244,7 @@ export function Character({ look, onPosition, moveTarget, streetMode = false, sh
     }
 
     root.current.position.x = THREE.MathUtils.clamp(root.current.position.x, streetMode ? -8 : -3.35, streetMode ? 8 : 3.35);
-    root.current.position.z = THREE.MathUtils.clamp(root.current.position.z, streetMode ? -3.4 : -3.3, streetMode ? 3.4 : 3.25);
+    root.current.position.z = THREE.MathUtils.clamp(root.current.position.z, streetMode ? -5.6 : -3.3, streetMode ? 5.6 : 3.25);
 
     if (moved && (forward || side)) root.current.rotation.y = Math.atan2(side, forward || 0.0001);
     if (moved && state.clock.elapsedTime - lastPositionReport.current >= 0.12) {
@@ -593,6 +593,11 @@ export default function WorldHome({ look, sceneId, immersive = false, worldScene
   const [position, setPosition] = useState({ x: 0, z: 0 });
   const [moveTarget, setMoveTarget] = useState<{ x: number; z: number } | null>(null);
   const homeTitle = worldScene === "mosque" ? "ABUJA NATIONAL MOSQUE" : worldScene === "street" ? `${area.toUpperCase()} STREET` : sceneId === "guzape_mansion_v1" ? "GUZAPE MANSION" : "NYANYA SHARED ROOM";
+
+  useEffect(() => {
+    setMoveTarget(null);
+    setPosition({ x: 0, z: 0 });
+  }, [worldScene, area, sceneId]);
 
   const positionLabel = useMemo(() => `Room position: ${position.x.toFixed(1)}, ${position.z.toFixed(1)}`, [position]);
 
