@@ -443,22 +443,22 @@ function StreetScene({ look, area, onPosition }: { look: CharacterLook; area: st
   ];
   const people = isQuiet ? [
     { x: -8, z: -5.3, shirt: "#276f58", trousers: "#26364a", skin: "#75462f", hair: "#181513", walking: false },
-    { x: 6, z: 5.25, shirt: "#293d7a", trousers: "#d2b88d", skin: "#a66e49", hair: "#171514", waving: true },
+    { x: 6, z: 5.25, shirt: "#293d7a", trousers: "#d2b88d", skin: "#a66e49", hair: "#171514", gender: "female", hairStyle: "braids", waving: true },
   ] : isWuse ? [
     { x: -8, z: -5.3, shirt: "#276f58", trousers: "#26364a", skin: "#75462f", hair: "#181513", walking: true },
-    { x: -3, z: -5.4, shirt: "#b64b45", trousers: "#182c3e", skin: "#8d5a3b", hair: "#171514", waving: true },
+    { x: -3, z: -5.4, shirt: "#b64b45", trousers: "#182c3e", skin: "#8d5a3b", hair: "#171514", gender: "female", hairStyle: "natural_puff", waving: true },
     { x: 4, z: -5.35, shirt: "#e4ba37", trousers: "#334b39", skin: "#603923", hair: "#171514", walking: true },
-    { x: 8, z: 5.25, shirt: "#293d7a", trousers: "#d2b88d", skin: "#a66e49", hair: "#171514", waving: true },
-    { x: -5, z: 5.35, shirt: "#166b70", trousers: "#26374b", skin: "#8d5a3b", hair: "#171514", walking: true },
+    { x: 8, z: 5.25, shirt: "#293d7a", trousers: "#d2b88d", skin: "#a66e49", hair: "#171514", gender: "female", hairStyle: "braids", waving: true },
+    { x: -5, z: 5.35, shirt: "#166b70", trousers: "#26374b", skin: "#8d5a3b", hair: "#171514", gender: "female", hairStyle: "natural_puff", walking: true },
     { x: 2, z: 5.35, shirt: "#87456d", trousers: "#302f38", skin: "#75462f", hair: "#171514", walking: true },
     { x: 11, z: -5.25, shirt: "#9b6a2f", trousers: "#26374b", skin: "#8d5a3b", hair: "#171514", waving: true },
     { x: -12, z: 5.3, shirt: "#497b88", trousers: "#282f3f", skin: "#603923", hair: "#171514", walking: true },
   ] : [
     { x: -8, z: -5.3, shirt: "#276f58", trousers: "#26364a", skin: "#75462f", hair: "#181513", walking: true },
-    { x: -3, z: -5.4, shirt: "#b64b45", trousers: "#182c3e", skin: "#8d5a3b", hair: "#171514", waving: true },
+    { x: -3, z: -5.4, shirt: "#b64b45", trousers: "#182c3e", skin: "#8d5a3b", hair: "#171514", gender: "female", hairStyle: "natural_puff", waving: true },
     { x: 4, z: -5.35, shirt: "#e4ba37", trousers: "#334b39", skin: "#603923", hair: "#171514", walking: true },
-    { x: 8, z: 5.25, shirt: "#293d7a", trousers: "#d2b88d", skin: "#a66e49", hair: "#171514", waving: true },
-    { x: -5, z: 5.35, shirt: "#166b70", trousers: "#26374b", skin: "#8d5a3b", hair: "#171514", walking: true },
+    { x: 8, z: 5.25, shirt: "#293d7a", trousers: "#d2b88d", skin: "#a66e49", hair: "#171514", gender: "female", hairStyle: "braids", waving: true },
+    { x: -5, z: 5.35, shirt: "#166b70", trousers: "#26374b", skin: "#8d5a3b", hair: "#171514", gender: "female", hairStyle: "natural_puff", walking: true },
     { x: 2, z: 5.35, shirt: "#87456d", trousers: "#302f38", skin: "#75462f", hair: "#171514" },
   ];
   const streetLabel = isWuse ? "AMINU KANO CRESCENT · WUSE 2" : area.toUpperCase() + " · ABUJA";
