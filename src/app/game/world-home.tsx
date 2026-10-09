@@ -43,12 +43,13 @@ const shoePalette: Record<string, string> = {
   sneakers_white_v1: "#eee9df",
 };
 
-function RoomFurniture() {
+function RoomFurniture({ sceneId }: { sceneId: string }) {
+  const isMansion = sceneId === "guzape_mansion_v1";
   return (
     <group>
       {/* Fixed floor and walls: all scene geometry is authored and reused. */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
-        <planeGeometry args={[9, 8]} />
+        <planeGeometry args={isMansion ? [13, 11] : [9, 8]} />
         <meshStandardMaterial color="#bba17e" roughness={0.92} />
       </mesh>
       {Array.from({ length: 9 }, (_, i) => (
@@ -57,20 +58,20 @@ function RoomFurniture() {
           <meshStandardMaterial color={i % 2 ? "#cdb694" : "#d6c2a2"} roughness={1} />
         </mesh>
       ))}
-      <mesh position={[0, 1.65, -4]} castShadow receiveShadow>
-        <boxGeometry args={[9, 3.3, 0.18]} />
+      <mesh position={[0, isMansion ? 2.05 : 1.65, isMansion ? -5.5 : -4]} castShadow receiveShadow>
+        <boxGeometry args={[isMansion ? 13 : 9, isMansion ? 4.1 : 3.3, 0.18]} />
         <meshStandardMaterial color="#d8c58e" roughness={0.95} />
       </mesh>
-      <mesh position={[-4.5, 1.65, 0]} castShadow receiveShadow>
-        <boxGeometry args={[0.18, 3.3, 8]} />
+      <mesh position={[isMansion ? -6.5 : -4.5, isMansion ? 2.05 : 1.65, 0]} castShadow receiveShadow>
+        <boxGeometry args={[0.18, isMansion ? 4.1 : 3.3, isMansion ? 11 : 8]} />
         <meshStandardMaterial color="#c6ad70" roughness={0.95} />
       </mesh>
-      <mesh position={[0, 3.33, -3.98]}>
-        <boxGeometry args={[9, 0.12, 0.22]} />
+      <mesh position={[0, isMansion ? 4.1 : 3.33, isMansion ? -5.48 : -3.98]}>
+        <boxGeometry args={[isMansion ? 13 : 9, 0.12, 0.22]} />
         <meshStandardMaterial color="#8f794e" />
       </mesh>
 
-      {/* Single-room bed/mattress. */}
+      {!isMansion && <group>\n      {/* Single-room bed/mattress. */}
       <group position={[-2.5, 0, -2.75]}>
         <mesh position={[0, 0.25, 0]} castShadow>
           <boxGeometry args={[2.1, 0.35, 1.2]} />
@@ -128,7 +129,7 @@ function RoomFurniture() {
         </mesh>
       </group>
 
-      {/* Window and door markers. */}
+      </group>}\n\n      {isMansion && <group>\n        {/* Mansion lounge: sofa, coffee table, dining area and tall indoor plant. */}\n        <group position={[-2.5, 0, -2.1]}>\n          <mesh position={[0, 0.48, 0]} castShadow><boxGeometry args={[2.7, 0.7, 0.85]} /><meshStandardMaterial color="#d4c5ad" /></mesh>\n          <mesh position={[0, 0.92, -0.32]} castShadow><boxGeometry args={[2.7, 0.38, 0.2]} /><meshStandardMaterial color="#c4b396" /></mesh>\n          {[-1, 1].map((s) => <mesh key={s} position={[s * 1.2, 0.8, 0]}><boxGeometry args={[0.25, 0.6, 0.85]} /><meshStandardMaterial color="#c4b396" /></mesh>)}\n        </group>\n        <group position={[0.4, 0, 0.1]}>\n          <mesh position={[0, 0.35, 0]} castShadow><boxGeometry args={[1.45, 0.12, 0.8]} /><meshStandardMaterial color="#60452f" /></mesh>\n          {[-0.55, 0.55].map((x) => [-0.25, 0.25].map((z) => <mesh key={x + ":" + z} position={[x, 0.17, z]}><boxGeometry args={[0.06, 0.34, 0.06]} /><meshStandardMaterial color="#60452f" /></mesh>))}\n        </group>\n        <group position={[3.8, 0, -2.8]}>\n          <mesh position={[0, 0.8, 0]}><boxGeometry args={[1.7, 0.12, 0.8]} /><meshStandardMaterial color="#76583b" /></mesh>\n          {[-0.65, 0.65].map((x) => <mesh key={x} position={[x, 0.42, 0]}><boxGeometry args={[0.08, 0.8, 0.08]} /><meshStandardMaterial color="#76583b" /></mesh>)}\n          <mesh position={[0, 1.15, 0]}><boxGeometry args={[0.7, 0.45, 0.48]} /><meshStandardMaterial color="#e8e0d0" /></mesh>\n        </group>\n        <group position={[4.5, 0, 2.1]}>\n          <mesh position={[0, 0.7, 0]}><cylinderGeometry args={[0.35, 0.42, 0.12, 12]} /><meshStandardMaterial color="#7b6548" /></mesh>\n          <mesh position={[0, 1.3, 0]}><cylinderGeometry args={[0.08, 0.12, 1.2, 8]} /><meshStandardMaterial color="#876a42" /></mesh>\n          <mesh position={[0, 1.95, 0]}><sphereGeometry args={[0.52, 10, 8]} /><meshStandardMaterial color="#34724b" /></mesh>\n        </group>\n      </group>}\n\n      {/* Window and door markers. */}
       <mesh position={[1.3, 2.05, -3.88]}>
         <boxGeometry args={[2.1, 1.05, 0.05]} />
         <meshStandardMaterial color="#dce6e7" emissive="#6e9aa5" emissiveIntensity={0.16} />
@@ -251,7 +252,7 @@ function RoomScene({ look, onPosition }: { look: CharacterLook; onPosition: (x: 
       <ambientLight intensity={1.55} />
       <directionalLight position={[4, 8, 5]} intensity={2.1} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
       <hemisphereLight args={["#fff1d2", "#7b8067", 1.1]} />
-      <RoomFurniture />
+      <RoomFurniture sceneId={look.background === "rich" ? "guzape_mansion_v1" : "nyanya_shared_room_v1"} />
       <Character look={look} onPosition={onPosition} />
       <Text position={[-3.65, 2.75, 3.72]} rotation={[0, 0, 0]} fontSize={0.14} color="#f4e5b5" anchorX="center">EXIT</Text>
       <Environment preset="apartment" />
