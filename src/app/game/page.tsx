@@ -41,6 +41,7 @@ export default async function GamePage() {
       streetSense: true,
       connectLevel: true,
       health: true,
+      fitness: true,
       happiness: true,
       walletBalance: true,
       bankBalance: true,
