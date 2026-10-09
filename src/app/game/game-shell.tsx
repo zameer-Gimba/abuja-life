@@ -185,7 +185,11 @@ export default function GameShell({ player }: { player: Player }) {
       setCurrentArea(data.currentArea);
       setBalance(BigInt(data.walletBalance));
       setNetWorth(BigInt(data.totalNetWorth));
-      setNotice(`You arrived in ${data.currentArea}. ${TRANSPORT_TYPES[travelMode].label} cost ₦${Number(data.cost).toLocaleString()}.`);
+      const arrivalMessage = `You arrived in ${data.currentArea}. ${TRANSPORT_TYPES[travelMode].label} cost ₦${Number(data.cost).toLocaleString()}.`;
+      setNotice(arrivalMessage);
+      setActivityToast(arrivalMessage);
+      setWorldScene("street");
+      setView("world");
     } catch {
       setNotice("Could not connect to the transport system.");
     } finally {
@@ -275,8 +279,12 @@ export default function GameShell({ player }: { player: Player }) {
             <p className="text-xs font-black">{player.displayName}</p>
             <p className="text-[10px] text-slate-500">Aura {aura} · Connection {connection}</p>
           </div>
-          <button onClick={() => setWorldScene(worldScene === "home" ? "street" : "home")} className="rounded-xl bg-slate-950/90 px-3 py-2 text-xs font-black text-white shadow-lg transition hover:bg-slate-800">
-            {worldScene === "home" ? "Step outside →" : "← Go home"}
+          <button onClick={() => {
+            if (worldScene === "home") setWorldScene("street");
+            else if (currentArea === player.homeArea) setWorldScene("home");
+            else openView("map");
+          }} className="rounded-xl bg-slate-950/90 px-3 py-2 text-xs font-black text-white shadow-lg transition hover:bg-slate-800">
+            {worldScene === "home" ? "Step outside →" : currentArea === player.homeArea ? "← Enter home" : "Choose destination"}
           </button>
         </div>
 
