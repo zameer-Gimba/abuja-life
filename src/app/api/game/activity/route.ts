@@ -112,7 +112,8 @@ export async function POST(request: Request) {
         },
       });
       if (!player) throw new Error("PLAYER_NOT_FOUND");
-      if (["pray_salah", "perform_wudu", "read_quran", "give_sadaqah"].includes(key) && player.currentArea !== "Central Area") {
+      const isMosqueActivity = key === "pray_salah" || key === "perform_wudu" || key === "read_quran" || key === "give_sadaqah";
+      if (isMosqueActivity && player.currentArea !== "Central Area") {
         throw new Error("NOT_AT_MOSQUE");
       }
 
