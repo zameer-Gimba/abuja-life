@@ -185,7 +185,13 @@ export default function GameShell({ player }: { player: Player }) {
       setCurrentArea(data.currentArea);
       setBalance(BigInt(data.walletBalance));
       setNetWorth(BigInt(data.totalNetWorth));
-      const arrivalMessage = `You arrived in ${data.currentArea}. ${TRANSPORT_TYPES[travelMode].label} cost ₦${Number(data.cost).toLocaleString()}.`;
+      if (typeof data.fitness === "number") setFitness(data.fitness);
+      if (typeof data.happiness === "number") setHappiness(data.happiness);
+      const arrivalMessage = travelMode === "TREK"
+        ? `You trekked to ${data.currentArea}. +₦${Number(data.reward ?? 0).toLocaleString()} Game Naira · Fitness +2.`
+        : travelMode === "PERSONAL_CAR"
+          ? `You arrived in ${data.currentArea}. Fuel −${data.fuelUsed}; car condition −1.`
+          : `You arrived in ${data.currentArea}. ${TRANSPORT_TYPES[travelMode].label} cost ₦${Number(data.cost).toLocaleString()}.`;
       setNotice(arrivalMessage);
       setActivityToast(arrivalMessage);
       setWorldScene("street");
@@ -366,8 +372,8 @@ export default function GameShell({ player }: { player: Player }) {
               <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Abuja / FCT</p><h1 className="mt-2 text-3xl font-black tracking-tight">Your city is open.</h1><p className="mt-2 text-sm text-slate-500">Choose an area and transport mode. Trips are charged and saved on the server.</p></div><div className="flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-sm font-bold"><Map size={16} className="text-blue-600" /> {currentArea}</div></div>
               <div className="mt-5 flex flex-wrap gap-2">
                 {(Object.entries(TRANSPORT_TYPES).filter(([key]) => key !== "ONE_CHANCE") as [TravelMode, { label: string; baseCost: number }][]).map(([mode, transport]) => (
-                  <button key={mode} onClick={() => setTravelMode(mode)} disabled={travelling} className={`rounded-xl border px-3 py-2 text-xs font-bold ${travelMode === mode ? "border-blue-500 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600"}`}>
-                    {transport.label} <span className="ml-1 font-normal text-slate-400">from ₦{transport.baseCost.toLocaleString()}</span>
+                  <button key={mode} onClick={() => setTravelMode(mode)} disabled={travelling || (mode === "PERSONAL_CAR" && !player.hasVehicle)} className={`rounded-xl border px-3 py-2 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-40 ${travelMode === mode ? "border-blue-500 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600"}`}>
+                    {transport.label} <span className="ml-1 font-normal text-slate-400">{mode === "PERSONAL_CAR" && !player.hasVehicle ? "buy a car first" : mode === "TREK" || mode === "PERSONAL_CAR" ? "free" : `from ₦${transport.baseCost.toLocaleString()}`}</span>
                   </button>
                 ))}
               </div>
