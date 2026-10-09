@@ -208,3 +208,20 @@ The game should not advertise every Phone app as functional until it is wired th
 8. Additional apps, languages, districts and more complex social or multiplayer behaviour after the core loop is stable.
 
 Acceptance tests must cover saved onboarding choices, map/phone persistence across scenes, ambiguous place handling, correct fares and destination, stable character/outfit identity while travelling, truthful NPC-versus-player labels, contact persistence, and graceful handling when a feature is not yet available.
+
+
+## Interactive Prototype Milestone — In Progress
+
+The feature branch currently contains the following early playable blockout:
+- Full-screen World view with the existing persisted player model, a crown marker for the controlled character, and an outside-street scene.
+- Moving low-poly cars and ambient pedestrians that walk, stand or wave. The default street population uses a range of brown skin tones and includes a small number of natural hairstyle variants; European-looking characters are not the visual default.
+- Different early street profiles for Wuse 2, Central Area, quieter Maitama/Asokoro/Guzape, and denser Nyanya/Mararaba. These are starter profiles and still need better district-specific meshes, signage, roads, landmarks and population tuning.
+- A persistent Home/Map/Phone navigation dock.
+- Initial state-changing activities: walking, dancing, eating, greeting a neighbour and an in-game family call. Activities update server-side wallet/stat state, create activity history/notifications, and have cooldowns/daily caps.
+- Trek travel is free, grants a modest Game Naira reward and improves fitness/happiness with a cooldown and daily limit.
+- Personal Car travel is available only after vehicle ownership; it uses fuel and slightly reduces vehicle condition.
+- Signup accepts a username and password without requiring an email or email verification. A reserved `.invalid` email value is stored internally when the player skips email; adding and verifying a real email remains future work.
+
+### Explicit prototype limitations
+
+This is a functional-direction prototype, not a finished Sims-like game. The characters, buildings and vehicles are low-poly primitives. The current map travel flow updates the destination and opens that area's street blockout, but does not yet show an animated pickup/boarding/drive route/exit sequence. NPCs are ambient at present; proximity-based dialogue, individual NPC stories, real multiplayer presence, a persisted contact list, full multi-step character creation and language selection still need implementation. Code and visuals have not yet been validated by a local build on the target machine. The branch requires dependency installation and a Prisma schema push before testing because it adds `Player.fitness` and `GameActivity`.
