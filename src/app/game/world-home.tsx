@@ -371,7 +371,49 @@ function StreetBuilding({ x, z, height, width, color, label }: { x: number; z: n
 }
 
 function StreetScene({ look, area, onPosition }: { look: CharacterLook; area: string; onPosition: (x: number, z: number) => void }) {
-  const buildings = [
+  const isQuiet = ["Maitama", "Asokoro", "Guzape"].includes(area);
+  const isCentral = area === "Central Area";
+  const isWuse = area === "Wuse 2";
+  const buildings = isCentral ? [
+    { x: -13, z: -10, height: 11.8, width: 4.8, color: "#b9c3c8", label: "CIVIC OFFICE" },
+    { x: -7, z: -10, height: 14, width: 4.6, color: "#b7c5cb", label: "BUSINESS TOWER" },
+    { x: -1, z: -10, height: 9.5, width: 4.7, color: "#c2c6c0", label: "CITY PLAZA" },
+    { x: 5.5, z: -10, height: 12.5, width: 5, color: "#aebdc4", label: "OFFICE COMPLEX" },
+    { x: 12, z: -10, height: 9.2, width: 4.6, color: "#c9c6b9", label: "CITY GATE ROAD" },
+    { x: -11, z: 10, height: 8, width: 5, color: "#c9c7bd", label: "CIVIC CENTRE" },
+    { x: -4, z: 10, height: 12, width: 5, color: "#afc1c8", label: "BUSINESS HUB" },
+    { x: 3, z: 10, height: 10.5, width: 5.1, color: "#c7c9c2", label: "OFFICE BLOCK" },
+    { x: 10.5, z: 10, height: 9.8, width: 5.5, color: "#b9c4c9", label: "CONFERENCE CENTRE" },
+  ] : isWuse ? [
+    { x: -13, z: -9, height: 5.8, width: 4.4, color: "#c9b79d", label: "CAFE" },
+    { x: -7, z: -9.2, height: 6.2, width: 4.6, color: "#c6c1b3", label: "BOUTIQUE" },
+    { x: -1, z: -9.4, height: 4.9, width: 4.7, color: "#d0a77f", label: "LOUNGE" },
+    { x: 5.5, z: -9.3, height: 6.6, width: 5, color: "#b8c4bf", label: "RESTAURANT" },
+    { x: 12, z: -9, height: 5.5, width: 4.6, color: "#d2b8a1", label: "NIGHT SPOT" },
+    { x: -11, z: 9.3, height: 4.5, width: 5, color: "#d3bba0", label: "SALON" },
+    { x: -4, z: 9.5, height: 6.1, width: 5, color: "#c1b9a9", label: "PHONE ACCESSORIES" },
+    { x: 3, z: 9.2, height: 6.4, width: 5.1, color: "#c4cbc5", label: "MINI MART" },
+    { x: 10.5, z: 9.4, height: 5.4, width: 5.5, color: "#d0af8d", label: "HOTEL" },
+  ] : isQuiet ? [
+    { x: -13, z: -10, height: 3.8, width: 5.8, color: "#d7c9b1", label: "PRIVATE RESIDENCE" },
+    { x: -6, z: -10, height: 4.4, width: 5.4, color: "#d2c7b5", label: "GUEST HOUSE" },
+    { x: 1, z: -10, height: 3.5, width: 5.5, color: "#cec7b6", label: "GARDEN VIEW" },
+    { x: 8, z: -10, height: 4.1, width: 5.4, color: "#d7ccb8", label: "RESIDENCE" },
+    { x: -11, z: 10, height: 4, width: 5.5, color: "#d3c6b3", label: "DIPLOMATIC AREA" },
+    { x: -3, z: 10, height: 3.6, width: 5.2, color: "#d5c8b2", label: "PRIVATE HOME" },
+    { x: 5, z: 10, height: 4.2, width: 5.8, color: "#d8cbb7", label: "GATED ESTATE" },
+    { x: 12, z: 10, height: 3.5, width: 5.3, color: "#d4c6b1", label: "RESIDENCE" },
+  ] : area === "Mararaba" || area === "Nyanya" ? [
+    { x: -13, z: -9, height: 4.2, width: 4.4, color: "#c9b79d", label: "PROVISIONS" },
+    { x: -7, z: -9.2, height: 5.0, width: 4.6, color: "#c6c1b3", label: "PHONE REPAIR" },
+    { x: -1, z: -9.4, height: 3.5, width: 4.7, color: "#d0a77f", label: "MAMA T'S" },
+    { x: 5.5, z: -9.3, height: 4.6, width: 5, color: "#b8c4bf", label: "PHARMACY" },
+    { x: 12, z: -9, height: 3.9, width: 4.6, color: "#d2b8a1", label: "SUYA & GRILL" },
+    { x: -11, z: 9.3, height: 3.4, width: 5, color: "#d3bba0", label: "SALON" },
+    { x: -4, z: 9.5, height: 4.7, width: 5, color: "#c1b9a9", label: "TRADING STORES" },
+    { x: 3, z: 9.2, height: 4.8, width: 5.1, color: "#c4cbc5", label: "MINI MART" },
+    { x: 10.5, z: 9.4, height: 3.8, width: 5.5, color: "#d0af8d", label: "LAUNDRY" },
+  ] : [
     { x: -13, z: -9, height: 4.8, width: 4.4, color: "#c9b79d", label: "PROVISIONS" },
     { x: -7, z: -9.2, height: 6.2, width: 4.6, color: "#c6c1b3", label: "SHOPPING" },
     { x: -1, z: -9.4, height: 3.9, width: 4.7, color: "#d0a77f", label: "MAMA T'S" },
@@ -382,6 +424,36 @@ function StreetScene({ look, area, onPosition }: { look: CharacterLook; area: st
     { x: 3, z: 9.2, height: 6.1, width: 5.1, color: "#c4cbc5", label: "MINI MART" },
     { x: 10.5, z: 9.4, height: 4.3, width: 5.5, color: "#d0af8d", label: "LAUNDRY" },
   ];
+  const vehicles = isQuiet ? [
+    { startX: -10, z: -1.35, speed: 1.6, color: "#ba3f37", roofColor: "#3b464f" },
+    { startX: 7, z: 1.45, speed: -1.3, color: "#477c65", roofColor: "#384b51" },
+  ] : [
+    { startX: -10, z: -1.35, speed: 2.2, color: "#ba3f37", roofColor: "#3b464f" },
+    { startX: 3, z: -1.35, speed: isCentral ? 2.6 : 1.5, color: "#e2bd45", roofColor: "#475b63" },
+    { startX: 9, z: 1.45, speed: -1.8, color: "#477c65", roofColor: "#384b51" },
+    { startX: -4, z: 1.45, speed: -2.5, color: "#ece6d8", roofColor: "#536778" },
+  ];
+  const people = isQuiet ? [
+    { x: -8, z: -5.3, shirt: "#276f58", trousers: "#26364a", skin: "#75462f", hair: "#181513", walking: false },
+    { x: 6, z: 5.25, shirt: "#293d7a", trousers: "#d2b88d", skin: "#a66e49", hair: "#171514", waving: true },
+  ] : isWuse ? [
+    { x: -8, z: -5.3, shirt: "#276f58", trousers: "#26364a", skin: "#75462f", hair: "#181513", walking: true },
+    { x: -3, z: -5.4, shirt: "#b64b45", trousers: "#182c3e", skin: "#8d5a3b", hair: "#171514", waving: true },
+    { x: 4, z: -5.35, shirt: "#e4ba37", trousers: "#334b39", skin: "#603923", hair: "#171514", walking: true },
+    { x: 8, z: 5.25, shirt: "#293d7a", trousers: "#d2b88d", skin: "#a66e49", hair: "#171514", waving: true },
+    { x: -5, z: 5.35, shirt: "#166b70", trousers: "#26374b", skin: "#8d5a3b", hair: "#171514", walking: true },
+    { x: 2, z: 5.35, shirt: "#87456d", trousers: "#302f38", skin: "#75462f", hair: "#171514", walking: true },
+    { x: 11, z: -5.25, shirt: "#9b6a2f", trousers: "#26374b", skin: "#8d5a3b", hair: "#171514", waving: true },
+    { x: -12, z: 5.3, shirt: "#497b88", trousers: "#282f3f", skin: "#603923", hair: "#171514", walking: true },
+  ] : [
+    { x: -8, z: -5.3, shirt: "#276f58", trousers: "#26364a", skin: "#75462f", hair: "#181513", walking: true },
+    { x: -3, z: -5.4, shirt: "#b64b45", trousers: "#182c3e", skin: "#8d5a3b", hair: "#171514", waving: true },
+    { x: 4, z: -5.35, shirt: "#e4ba37", trousers: "#334b39", skin: "#603923", hair: "#171514", walking: true },
+    { x: 8, z: 5.25, shirt: "#293d7a", trousers: "#d2b88d", skin: "#a66e49", hair: "#171514", waving: true },
+    { x: -5, z: 5.35, shirt: "#166b70", trousers: "#26374b", skin: "#8d5a3b", hair: "#171514", walking: true },
+    { x: 2, z: 5.35, shirt: "#87456d", trousers: "#302f38", skin: "#75462f", hair: "#171514" },
+  ];
+  const streetLabel = isWuse ? "AMINU KANO CRESCENT · WUSE 2" : area.toUpperCase() + " · ABUJA";
 
   return (
     <>
@@ -400,19 +472,10 @@ function StreetScene({ look, area, onPosition }: { look: CharacterLook; area: st
         <mesh position={[0.3, 2.55, 0]} rotation={[0, 0, -0.2]}><boxGeometry args={[0.65, 0.08, 0.08]} /><meshStandardMaterial color="#484d52" /></mesh>
         <mesh position={[0.54, 2.45, 0]}><boxGeometry args={[0.25, 0.12, 0.18]} /><meshStandardMaterial color="#f2df9f" emissive="#f2df9f" emissiveIntensity={0.3} /></mesh>
       </group>
-      <StreetBuilding x={-15} z={-9} height={4.2} width={3.8} color="#d0b79b" label="CORNER SHOP" />
-      <MovingCar startX={-10} z={-1.35} speed={2.2} color="#ba3f37" roofColor="#3b464f" />
-      <MovingCar startX={3} z={-1.35} speed={1.5} color="#e2bd45" roofColor="#475b63" />
-      <MovingCar startX={9} z={1.45} speed={-1.8} color="#477c65" roofColor="#384b51" />
-      <MovingCar startX={-4} z={1.45} speed={-2.5} color="#ece6d8" roofColor="#536778" />
-      <AmbientPedestrian x={-8} z={-5.3} shirt="#276f58" trousers="#26364a" skin="#75462f" hair="#181513" walking />
-      <AmbientPedestrian x={-3} z={-5.4} shirt="#b64b45" trousers="#182c3e" skin="#8d5a3b" hair="#171514" waving />
-      <AmbientPedestrian x={4} z={-5.35} shirt="#e4ba37" trousers="#334b39" skin="#603923" hair="#171514" walking />
-      <AmbientPedestrian x={8} z={5.25} shirt="#293d7a" trousers="#d2b88d" skin="#a66e49" hair="#171514" waving />
-      <AmbientPedestrian x={-5} z={5.35} shirt="#166b70" trousers="#26374b" skin="#8d5a3b" hair="#171514" walking />
-      <AmbientPedestrian x={2} z={5.35} shirt="#87456d" trousers="#302f38" skin="#75462f" hair="#171514" />
+      {vehicles.map((vehicle) => <MovingCar key={vehicle.startX + ":" + vehicle.z} {...vehicle} />)}
+      {people.map((person, index) => <AmbientPedestrian key={index} {...person} />)}
       <Character look={look} onPosition={onPosition} streetMode showCrown />
-      <Text position={[0, 3.8, -5.4]} rotation={[0, 0, 0]} fontSize={0.38} color="#153c37" anchorX="center">{area.toUpperCase()} · ABUJA</Text>
+      <Text position={[0, 3.8, -5.4]} rotation={[0, 0, 0]} fontSize={0.38} color="#153c37" anchorX="center">{streetLabel}</Text>
       <Environment preset="city" />
     </>
   );
