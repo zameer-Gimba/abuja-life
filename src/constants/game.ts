@@ -58,16 +58,25 @@ export const HOUSING_TYPES = {
 }
 
 // ── Transport ──────────────────────────────────────────────
-export const TRAVEL_AREAS = ["Nyanya", "Kubwa", "Gwarinpa", "Jabi", "Wuse 2", "Central Area", "Guzape", "Maitama"] as const
+export const TRAVEL_AREAS = [
+  "Nyanya", "Mararaba", "Lugbe", "Mpape", "Kubwa", "Gwarinpa",
+  "Garki", "Wuye", "Jabi", "Wuse 2", "Central Area", "Guzape", "Asokoro", "Maitama",
+] as const
 
 export const TRAVEL_AREA_DISTANCE: Record<string, number> = {
   Nyanya: 1,
+  Mararaba: 1,
+  Lugbe: 2,
+  Mpape: 2,
   Kubwa: 2,
   Gwarinpa: 2,
+  Garki: 3,
+  Wuye: 3,
   Jabi: 3,
   "Wuse 2": 3,
   "Central Area": 4,
   Guzape: 4,
+  Asokoro: 4,
   Maitama: 5,
 }
 
