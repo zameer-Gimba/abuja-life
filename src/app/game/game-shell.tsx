@@ -55,12 +55,18 @@ type Player = {
 
 const areas = [
   { name: "Nyanya", tier: "Hustle", note: "Affordable start", color: "bg-emerald-500" },
+  { name: "Mararaba", tier: "Hustle", note: "Busy edge-of-city corridor", color: "bg-orange-500" },
+  { name: "Lugbe", tier: "Growing", note: "Residential and airport road", color: "bg-amber-500" },
+  { name: "Mpape", tier: "Growing", note: "Hillside neighbourhood", color: "bg-orange-500" },
   { name: "Kubwa", tier: "Mid-level", note: "Big estate life", color: "bg-blue-500" },
   { name: "Gwarinpa", tier: "Mid-level", note: "Estate & families", color: "bg-blue-500" },
+  { name: "Garki", tier: "City district", note: "Offices, shops and services", color: "bg-amber-500" },
+  { name: "Wuye", tier: "Mid-level", note: "Residential and business", color: "bg-cyan-500" },
   { name: "Jabi", tier: "Comfortable", note: "Lake & leisure", color: "bg-cyan-500" },
   { name: "Wuse 2", tier: "Premium", note: "Business & nightlife", color: "bg-violet-500" },
   { name: "Central Area", tier: "Power", note: "CBD & institutions", color: "bg-amber-500" },
   { name: "Guzape", tier: "Elite", note: "Quiet & upscale", color: "bg-indigo-500" },
+  { name: "Asokoro", tier: "Elite", note: "Diplomatic and landmark district", color: "bg-rose-500" },
   { name: "Maitama", tier: "Elite", note: "Embassies & power", color: "bg-rose-500" },
 ];
 
@@ -68,11 +74,12 @@ const pointDestinations = [
   { name: "Abuja National Mosque", area: "Central Area", type: "Mosque", description: "Courtyard, prayer hall and community activities" },
   { name: "National Assembly", area: "Central Area", type: "Government", description: "The National Assembly complex" },
   { name: "City Gate", area: "Central Area", type: "Landmark", description: "The city entrance landmark" },
+  { name: "Aminu Kano Crescent", area: "Wuse 2", type: "Street", description: "Restaurants, shops and evening city life" },
   { name: "Jabi Lake", area: "Jabi", type: "Leisure", description: "Lakefront walks and relaxation" },
   { name: "Wuse Market", area: "Wuse 2", type: "Market", description: "Everyday shopping and street activity" },
   { name: "Aso Rock", area: "Asokoro", type: "Landmark", description: "Rock landmark and surrounding district" },
   { name: "Millennium Park", area: "Maitama", type: "Park", description: "Green space and walking paths" },
-  { name: "Berger Junction", area: "Central Area", type: "Transport hub", description: "A busy transport interchange" },
+  { name: "Berger Junction", area: "Garki", type: "Transport hub", description: "A busy transport interchange" },
 ];
 
 const facilities = [
