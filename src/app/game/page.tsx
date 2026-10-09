@@ -16,6 +16,7 @@ export default async function GamePage() {
     select: {
       id: true,
       username: true,
+      gender: true,
       characterPresetId: true,
       skinTone: true,
       hairstyle: true,
