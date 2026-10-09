@@ -5,11 +5,25 @@ import { calculateTravelCost, TRANSPORT_TYPES, type TravelMode } from "@/constan
 import BankPanel from "./bank-panel";
 import PropertyPanel from "./property-panel";
 import VehiclePanel from "./vehicle-panel";
+import WorldHome from "./world-home";
 import { ArrowRight, Banknote, Building2, Car, Compass, Fuel, Home, Map, Menu, Shield, Sparkles, Users, Wallet, X, Zap } from "lucide-react";
 
 type Player = {
   id: string;
   username: string;
+  gender: string;
+  characterPresetId: string;
+  skinTone: string;
+  hairstyle: string;
+  hairColor: string;
+  bodyType: string;
+  heightCm: number;
+  appearanceSeed: number;
+  outfitTop: string;
+  outfitBottom: string;
+  outfitShoes: string;
+  outfitOuterwear: string;
+  homeSceneId: string;
   displayName: string;
   background: string;
   backgroundLabel: string;
@@ -67,7 +81,7 @@ export default function GameShell({ player }: { player: Player }) {
   const [currentArea, setCurrentArea] = useState(player.currentArea);
   const [menuOpen, setMenuOpen] = useState(false);
   const [notice, setNotice] = useState("You have entered Abuja.");
-  const [view, setView] = useState("map");
+  const [view, setView] = useState("world");
   const [travelMode, setTravelMode] = useState<TravelMode>("BUS_STOP");
   const [travelling, setTravelling] = useState(false);
   const [balance, setBalance] = useState(BigInt(player.walletBalance));
@@ -184,17 +198,19 @@ export default function GameShell({ player }: { player: Player }) {
         </div>
       </header>
 
-      {menuOpen && <div className="border-b border-slate-200 bg-white p-4 lg:hidden"><div className="grid grid-cols-2 gap-2">{["Map","Jobs","Property","Vehicles","Bank","Politics","Profile"].map((item) => <button key={item} onClick={() => { openView(item.toLowerCase()); setMenuOpen(false); }} className="rounded-xl border border-slate-200 p-3 text-left text-sm font-bold">{item}</button>)}</div></div>}
+      {menuOpen && <div className="border-b border-slate-200 bg-white p-4 lg:hidden"><div className="grid grid-cols-2 gap-2">{["World","Map","Jobs","Property","Vehicles","Bank","Politics","Profile"].map((item) => <button key={item} onClick={() => { openView(item.toLowerCase()); setMenuOpen(false); }} className="rounded-xl border border-slate-200 p-3 text-left text-sm font-bold">{item}</button>)}</div></div>}
 
       <div className="mx-auto grid max-w-[1500px] gap-5 p-4 sm:p-6 lg:grid-cols-[240px_1fr_300px]">
         <aside className="hidden rounded-2xl border border-slate-200 bg-white p-4 lg:block">
           <p className="px-2 text-xs font-bold uppercase tracking-[0.2em] text-slate-400">City menu</p>
-          <div className="mt-3 space-y-1">{[["map","Map",Map],["jobs","Jobs",Banknote],["property","Property",Home],["vehicles","Vehicles",Car],["bank","Bank",Wallet],["politics","Politics",Users],["profile","Profile",Shield]].map(([id,label,Icon]) => <button key={String(id)} onClick={() => openView(String(id))} className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold ${view === id ? "bg-emerald-50 text-emerald-700" : "text-slate-600 hover:bg-slate-50"}`}><Icon size={17} />{String(label)}</button>)}</div>
+          <div className="mt-3 space-y-1">{[["world","World",Home],["map","Map",Map],["jobs","Jobs",Banknote],["property","Property",Home],["vehicles","Vehicles",Car],["bank","Bank",Wallet],["politics","Politics",Users],["profile","Profile",Shield]].map(([id,label,Icon]) => <button key={String(id)} onClick={() => openView(String(id))} className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold ${view === id ? "bg-emerald-50 text-emerald-700" : "text-slate-600 hover:bg-slate-50"}`}><Icon size={17} />{String(label)}</button>)}</div>
           <div className="mt-8 rounded-2xl bg-slate-950 p-4 text-white"><p className="text-xs font-bold text-blue-300">CURRENT AREA</p><p className="mt-1 text-xl font-black">{currentArea}</p><p className="mt-1 text-xs font-semibold text-blue-300">{travelling ? "Travelling..." : `${TRANSPORT_TYPES[travelMode].label} selected`}</p><p className="mt-2 text-xs leading-5 text-slate-400">{areas.find(a => a.name === currentArea)?.note ?? "Your current location"}</p></div>
         </aside>
 
         <section className="min-w-0">
           {notice && <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800">{notice}</div>}
+
+          {view === "world" && <WorldHome sceneId={player.homeSceneId} look={{ gender: player.gender, skinTone: player.skinTone, hairstyle: player.hairstyle, hairColor: player.hairColor, outfitTop: player.outfitTop, outfitBottom: player.outfitBottom, outfitShoes: player.outfitShoes, heightCm: player.heightCm, background: player.background }} />}
 
           {view === "map" && <div className="space-y-5">
             <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-7">
@@ -242,7 +258,7 @@ export default function GameShell({ player }: { player: Player }) {
           </div>}
           {view === "vehicles" && <VehiclePanel onUpdate={(data) => { setBalance(BigInt(data.walletBalance)); setNetWorth(BigInt(data.totalNetWorth)); setNotice(data.message); }} />}\n          {view === "bank" && <BankPanel onUpdate={(b, message) => { setBalance(BigInt(b.walletBalance)); setNetWorth(BigInt(b.totalNetWorth)); setNotice(message); }} />}
           {view === "property" && <PropertyPanel onUpdate={(data) => { setBalance(BigInt(data.walletBalance)); setNetWorth(BigInt(data.netWorth)); setCurrentArea(data.housing.currentArea); setNotice(data.message); }} />}
-          {view !== "map" && view !== "jobs" && view !== "property" && view !== "bank" && view !== "vehicles" && <div className="rounded-3xl border border-slate-200 bg-white p-7"><p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">{view}</p><h1 className="mt-2 text-3xl font-black capitalize">{view} is coming into the playable economy.</h1><p className="mt-4 max-w-2xl leading-7 text-slate-600">The dashboard shell is ready. This section will be connected to its server-authoritative game actions in the next build stages.</p></div>}
+          {view !== "world" && view !== "map" && view !== "jobs" && view !== "property" && view !== "bank" && view !== "vehicles" && <div className="rounded-3xl border border-slate-200 bg-white p-7"><p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">{view}</p><h1 className="mt-2 text-3xl font-black capitalize">{view} is coming into the playable economy.</h1><p className="mt-4 max-w-2xl leading-7 text-slate-600">The dashboard shell is ready. This section will be connected to its server-authoritative game actions in the next build stages.</p></div>}
         </section>
 
         <aside className="space-y-5">
