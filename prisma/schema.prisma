@@ -16,6 +16,19 @@ model Player {
   passwordHash     String
   gender           String
   avatarUrl        String?
+  // Persistent character identity: scene assets resolve from these stable preset keys.
+  characterPresetId String   @default("nigerian_young_adult_v1")
+  skinTone          String   @default("deep_brown")
+  hairstyle         String   @default("low_cut")
+  hairColor         String   @default("black")
+  bodyType          String   @default("average")
+  heightCm          Int      @default(170)
+  appearanceSeed    Int      @default(1)
+  outfitTop         String   @default("plain_tee_cream_v1")
+  outfitBottom      String   @default("jeans_dark_v1")
+  outfitShoes       String   @default("sneakers_black_v1")
+  outfitOuterwear   String   @default("none")
+  homeSceneId       String   @default("nyanya_shared_room_v1")
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   background       String   @default("poor")
