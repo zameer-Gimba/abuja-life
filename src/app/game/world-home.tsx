@@ -183,6 +183,7 @@ function RoomFurniture({ sceneId }: { sceneId: string }) {
 export function Character({ look, onPosition, streetMode = false, showCrown = false }: { look: CharacterLook; onPosition: (x: number, z: number) => void; streetMode?: boolean; showCrown?: boolean }) {
   const root = useRef<THREE.Group>(null);
   const keys = useRef<Record<string, boolean>>({});
+  const lastPositionReport = useRef(0);
   const skin = skinPalette[look.skinTone] ?? skinPalette.medium_brown;
   const top = topPalette[look.outfitTop] ?? "#e8ddc8";
   const bottom = bottomPalette[look.outfitBottom] ?? "#26374b";
@@ -202,7 +203,7 @@ export function Character({ look, onPosition, streetMode = false, showCrown = fa
     };
   }, []);
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     if (!root.current) return;
     const k = keys.current;
     const forward = (k.w || k.arrowup ? 1 : 0) - (k.s || k.arrowdown ? 1 : 0);
@@ -213,7 +214,10 @@ export function Character({ look, onPosition, streetMode = false, showCrown = fa
       root.current.position.x = THREE.MathUtils.clamp(root.current.position.x, streetMode ? -8 : -3.35, streetMode ? 8 : 3.35);
       root.current.position.z = THREE.MathUtils.clamp(root.current.position.z, streetMode ? -3.4 : -3.3, streetMode ? 3.4 : 3.25);
       root.current.rotation.y = Math.atan2(side, forward || 0.0001);
-      onPosition(root.current.position.x, root.current.position.z);
+      if (state.clock.elapsedTime - lastPositionReport.current >= 0.12) {
+        lastPositionReport.current = state.clock.elapsedTime;
+        onPosition(Number(root.current.position.x.toFixed(2)), Number(root.current.position.z.toFixed(2)));
+      }
     }
   });
 
