@@ -61,6 +61,23 @@ export async function POST(request: Request) {
       if (player.currentArea === destination) throw new Error("ALREADY_THERE");
 
       if (mode === "PERSONAL_CAR" && !player.hasVehicle) throw new Error("NO_PERSONAL_CAR");
+      if (mode === "TREK") {
+        const now = new Date();
+        const dayStart = new Date(now);
+        dayStart.setHours(0, 0, 0, 0);
+        const lastTrek = await tx.gameActivity.findFirst({
+          where: { playerId, activityType: "trek" },
+          orderBy: { createdAt: "desc" },
+          select: { createdAt: true },
+        });
+        if (lastTrek && now.getTime() - lastTrek.createdAt.getTime() < 20_000) {
+          throw new Error("TREK_COOLDOWN");
+        }
+        const dailyTreks = await tx.gameActivity.count({
+          where: { playerId, activityType: "trek", createdAt: { gte: dayStart } },
+        });
+        if (dailyTreks >= 12) throw new Error("TREK_DAILY_LIMIT");
+      }
 
       const cost = calculateTravelCost(player.currentArea, destination, mode as TravelMode);
       const costBigInt = BigInt(cost);
@@ -179,6 +196,8 @@ export async function POST(request: Request) {
     if (code === "INSUFFICIENT_FUNDS") return NextResponse.json({ error: "Not enough Game Naira for this trip." }, { status: 400 });
     if (code === "NO_PERSONAL_CAR") return NextResponse.json({ error: "Buy a vehicle before choosing Personal Car." }, { status: 400 });
     if (code === "INSUFFICIENT_FUEL") return NextResponse.json({ error: "Your car needs fuel before this trip." }, { status: 400 });
+    if (code === "TREK_COOLDOWN") return NextResponse.json({ error: "Take a short breather before trekking again." }, { status: 429 });
+    if (code === "TREK_DAILY_LIMIT") return NextResponse.json({ error: "You have reached today's trekking reward limit." }, { status: 429 });
 
     return NextResponse.json({ error: "Travel failed. Try again." }, { status: 500 });
   }
