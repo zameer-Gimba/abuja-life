@@ -145,30 +145,58 @@ export type CharacterAppearancePreset = {
   outfitOuterwear: string;
 };
 
-export const STARTING_APPEARANCE_PRESETS: Record<"rich" | "poor", CharacterAppearancePreset> = {
-  poor: {
-    id: "nigerian_young_adult_v1",
-    skinTone: "medium_brown",
-    hairstyle: "low_cut_v1",
-    hairColor: "black",
-    bodyType: "average",
-    heightCm: 170,
-    outfitTop: "tee_cream_v1",
-    outfitBottom: "jeans_dark_v1",
-    outfitShoes: "sneakers_black_v1",
-    outfitOuterwear: "none",
+export const STARTING_APPEARANCE_PRESETS: Record<"male" | "female", Record<"rich" | "poor", CharacterAppearancePreset>> = {
+  male: {
+    poor: {
+      id: "nigerian_male_young_adult_v1",
+      skinTone: "medium_brown",
+      hairstyle: "low_cut_v1",
+      hairColor: "black",
+      bodyType: "male_average_v1",
+      heightCm: 172,
+      outfitTop: "tee_cream_v1",
+      outfitBottom: "jeans_dark_v1",
+      outfitShoes: "sneakers_black_v1",
+      outfitOuterwear: "none",
+    },
+    rich: {
+      id: "nigerian_male_young_adult_v1",
+      skinTone: "medium_brown",
+      hairstyle: "low_fade_v1",
+      hairColor: "black",
+      bodyType: "male_average_v1",
+      heightCm: 172,
+      outfitTop: "polo_navy_v1",
+      outfitBottom: "chinos_sand_v1",
+      outfitShoes: "sneakers_white_v1",
+      outfitOuterwear: "none",
+    },
   },
-  rich: {
-    id: "nigerian_young_adult_v1",
-    skinTone: "medium_brown",
-    hairstyle: "low_fade_v1",
-    hairColor: "black",
-    bodyType: "average",
-    heightCm: 170,
-    outfitTop: "polo_navy_v1",
-    outfitBottom: "chinos_sand_v1",
-    outfitShoes: "sneakers_white_v1",
-    outfitOuterwear: "none",
+  female: {
+    poor: {
+      id: "nigerian_female_young_adult_v1",
+      skinTone: "medium_brown",
+      hairstyle: "natural_puff_v1",
+      hairColor: "black",
+      bodyType: "female_average_v1",
+      heightCm: 165,
+      outfitTop: "tee_rose_v1",
+      outfitBottom: "jeans_dark_v1",
+      outfitShoes: "sneakers_black_v1",
+      outfitOuterwear: "none",
+    },
+    rich: {
+      id: "nigerian_female_young_adult_v1",
+      skinTone: "medium_brown",
+      hairstyle: "natural_twist_out_v1",
+      hairColor: "black",
+      bodyType: "female_average_v1",
+      heightCm: 165,
+      outfitTop: "blouse_lilac_v1",
+      outfitBottom: "trousers_charcoal_v1",
+      outfitShoes: "sneakers_white_v1",
+      outfitOuterwear: "none",
+    },
   },
 };
 
@@ -200,4 +228,89 @@ export const WORLD_PERSISTENCE_RULES = [
   "The poor starting home uses stationary non-player roommate props/actors that do not replace or impersonate the player.",
   "Rich and poor starting homes use different scene IDs and authored layouts.",
   "Use stable model/asset IDs and deterministic seeds; never generate a fresh character or house from text for each frame.",
+] as const;
+
+export type StreetPopulationProfile = {
+  daytimePedestrianDensity: "very_low" | "low" | "moderate" | "high" | "very_high";
+  eveningPedestrianDensity: "very_low" | "low" | "moderate" | "high" | "very_high";
+  nightPedestrianDensity: "very_low" | "low" | "moderate" | "high" | "very_high";
+  nightLighting: "quiet_residential" | "street_lit" | "commercial_bright" | "venue_lighting";
+  npcMix: readonly string[];
+};
+
+export const STREET_POPULATION_PROFILES: Record<string, StreetPopulationProfile> = {
+  "Maitama diplomatic streets": {
+    daytimePedestrianDensity: "low",
+    eveningPedestrianDensity: "very_low",
+    nightPedestrianDensity: "very_low",
+    nightLighting: "quiet_residential",
+    npcMix: ["occasional residents", "security staff", "domestic staff", "passing drivers"],
+  },
+  "Asokoro residential streets": {
+    daytimePedestrianDensity: "low",
+    eveningPedestrianDensity: "very_low",
+    nightPedestrianDensity: "very_low",
+    nightLighting: "quiet_residential",
+    npcMix: ["occasional residents", "security staff", "passing drivers"],
+  },
+  "Central Area": {
+    daytimePedestrianDensity: "high",
+    eveningPedestrianDensity: "moderate",
+    nightPedestrianDensity: "low",
+    nightLighting: "commercial_bright",
+    npcMix: ["office workers", "visitors", "security staff", "commuters"],
+  },
+  "Wuse 2 / Aminu Kano Crescent": {
+    daytimePedestrianDensity: "high",
+    eveningPedestrianDensity: "high",
+    nightPedestrianDensity: "high",
+    nightLighting: "venue_lighting",
+    npcMix: ["diners", "club patrons", "drivers", "venue staff", "adult nightlife workers"],
+  },
+  Kubwa: {
+    daytimePedestrianDensity: "high",
+    eveningPedestrianDensity: "moderate",
+    nightPedestrianDensity: "low",
+    nightLighting: "street_lit",
+    npcMix: ["residents", "market traders", "commuters", "food vendors"],
+  },
+  Mararaba: {
+    daytimePedestrianDensity: "very_high",
+    eveningPedestrianDensity: "high",
+    nightPedestrianDensity: "moderate",
+    nightLighting: "street_lit",
+    npcMix: ["commuters", "traders", "food vendors", "commercial drivers", "residents"],
+  },
+  Nyanya: {
+    daytimePedestrianDensity: "very_high",
+    eveningPedestrianDensity: "high",
+    nightPedestrianDensity: "moderate",
+    nightLighting: "street_lit",
+    npcMix: ["commuters", "traders", "food vendors", "commercial drivers", "residents"],
+  },
+};
+
+export const NIGHTLIFE_VENUES = [
+  {
+    id: "wuse2-nightclub-v1",
+    name: "The Velvet Room",
+    area: "Wuse 2",
+    nearbyStreet: "Aminu Kano Crescent",
+    venueType: "nightclub",
+    openingHour: 20,
+    closingHour: 4,
+    entryTier: "premium",
+    audioProfile: "club_music_and_crowd",
+    npcProfile: "adult_nightlife_crowd",
+    fictionalVenue: true,
+  },
+] as const;
+
+export const NIGHT_SCENE_RULES = [
+  "NPC population and placement are determined by district, time of day, and venue activity; never scatter the same crowd uniformly across every street.",
+  "Maitama and Asokoro residential/diplomatic streets should feel quiet, private and security-conscious, with sparse pedestrian traffic.",
+  "Wuse 2 around Aminu Kano Crescent becomes brighter and busier at night, with club patrons, drivers, venue staff and adult nightlife workers represented as non-explicit ambient NPCs.",
+  "Nightlife street NPCs are background world population only in the first vertical slice; no sexual-service interaction or explicit depiction is part of this milestone.",
+  "Nightclub scenes use their own authored venue layout, lighting and audio profile; audio must have volume and mute controls.",
+  "Use deterministic spawn points and saved/world-seeded placement so NPCs do not teleport or change identity on each render.",
 ] as const;
