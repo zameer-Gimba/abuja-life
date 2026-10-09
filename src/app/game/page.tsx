@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import GameShell from "./game-shell";
 
+export const instant = false;
+
 export default async function GamePage() {
   const session = await getServerSession(authOptions);
 
