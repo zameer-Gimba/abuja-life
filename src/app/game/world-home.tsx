@@ -180,7 +180,7 @@ function RoomFurniture({ sceneId }: { sceneId: string }) {
   );
 }
 
-export function Character({ look, onPosition, streetMode = false, showCrown = false }: { look: CharacterLook; onPosition: (x: number, z: number) => void; streetMode?: boolean; showCrown?: boolean }) {
+export function Character({ look, onPosition, moveTarget, streetMode = false, showCrown = false }: { look: CharacterLook; onPosition: (x: number, z: number) => void; moveTarget?: { x: number; z: number } | null; streetMode?: boolean; showCrown?: boolean }) {
   const root = useRef<THREE.Group>(null);
   const keys = useRef<Record<string, boolean>>({});
   const lastPositionReport = useRef(0);
@@ -203,21 +203,53 @@ export function Character({ look, onPosition, streetMode = false, showCrown = fa
     };
   }, []);
 
+  const moveTargetRef = useRef<THREE.Vector3 | null>(null);
+
+  useEffect(() => {
+    if (!moveTarget) return;
+    moveTargetRef.current = new THREE.Vector3(
+      THREE.MathUtils.clamp(moveTarget.x, streetMode ? -8 : -3.35, streetMode ? 8 : 3.35),
+      0,
+      THREE.MathUtils.clamp(moveTarget.z, streetMode ? -3.4 : -3.3, streetMode ? 3.4 : 3.25),
+    );
+  }, [moveTarget?.x, moveTarget?.z, streetMode]);
+
   useFrame((state, delta) => {
     if (!root.current) return;
     const k = keys.current;
     const forward = (k.w || k.arrowup ? 1 : 0) - (k.s || k.arrowdown ? 1 : 0);
     const side = (k.d || k.arrowright ? 1 : 0) - (k.a || k.arrowleft ? 1 : 0);
+    let moved = false;
+
     if (forward || side) {
-      root.current.position.x += side * delta * 2.1;
-      root.current.position.z -= forward * delta * 2.1;
-      root.current.position.x = THREE.MathUtils.clamp(root.current.position.x, streetMode ? -8 : -3.35, streetMode ? 8 : 3.35);
-      root.current.position.z = THREE.MathUtils.clamp(root.current.position.z, streetMode ? -3.4 : -3.3, streetMode ? 3.4 : 3.25);
-      root.current.rotation.y = Math.atan2(side, forward || 0.0001);
-      if (state.clock.elapsedTime - lastPositionReport.current >= 0.12) {
-        lastPositionReport.current = state.clock.elapsedTime;
-        onPosition(Number(root.current.position.x.toFixed(2)), Number(root.current.position.z.toFixed(2)));
+      moveTargetRef.current = null;
+      const length = Math.hypot(forward, side) || 1;
+      root.current.position.x += (side / length) * delta * 2.6;
+      root.current.position.z -= (forward / length) * delta * 2.6;
+      moved = true;
+    } else if (moveTargetRef.current) {
+      const target = moveTargetRef.current;
+      const dx = target.x - root.current.position.x;
+      const dz = target.z - root.current.position.z;
+      const distance = Math.hypot(dx, dz);
+      if (distance < 0.14) {
+        moveTargetRef.current = null;
+      } else {
+        const step = Math.min(distance, delta * 2.6);
+        root.current.position.x += (dx / distance) * step;
+        root.current.position.z += (dz / distance) * step;
+        root.current.rotation.y = Math.atan2(dx, -dz);
+        moved = true;
       }
+    }
+
+    root.current.position.x = THREE.MathUtils.clamp(root.current.position.x, streetMode ? -8 : -3.35, streetMode ? 8 : 3.35);
+    root.current.position.z = THREE.MathUtils.clamp(root.current.position.z, streetMode ? -3.4 : -3.3, streetMode ? 3.4 : 3.25);
+
+    if (moved && (forward || side)) root.current.rotation.y = Math.atan2(side, forward || 0.0001);
+    if (moved && state.clock.elapsedTime - lastPositionReport.current >= 0.12) {
+      lastPositionReport.current = state.clock.elapsedTime;
+      onPosition(Number(root.current.position.x.toFixed(2)), Number(root.current.position.z.toFixed(2)));
     }
   });
 
@@ -279,7 +311,7 @@ export function Character({ look, onPosition, streetMode = false, showCrown = fa
   );
 }
 
-function RoomScene({ look, onPosition }: { look: CharacterLook; onPosition: (x: number, z: number) => void }) {
+function RoomScene({ look, onPosition, moveTarget }: { look: CharacterLook; onPosition: (x: number, z: number) => void; moveTarget: { x: number; z: number } | null }) {
   return (
     <>
       <color attach="background" args={["#252b2d"]} />
@@ -287,7 +319,7 @@ function RoomScene({ look, onPosition }: { look: CharacterLook; onPosition: (x: 
       <directionalLight position={[4, 8, 5]} intensity={2.1} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
       <hemisphereLight args={["#fff1d2", "#7b8067", 1.1]} />
       <RoomFurniture sceneId={look.background === "rich" ? "guzape_mansion_v1" : "nyanya_shared_room_v1"} />
-      <Character look={look} onPosition={onPosition} showCrown />
+      <Character look={look} onPosition={onPosition} moveTarget={moveTarget} showCrown />
       <Text position={[-3.65, 2.75, 3.72]} rotation={[0, 0, 0]} fontSize={0.14} color="#f4e5b5" anchorX="center">EXIT</Text>
       <Environment preset="apartment" />
     </>
@@ -378,7 +410,7 @@ function StreetBuilding({ x, z, height, width, color, label }: { x: number; z: n
   );
 }
 
-function StreetScene({ look, area, onPosition }: { look: CharacterLook; area: string; onPosition: (x: number, z: number) => void }) {
+function StreetScene({ look, area, onPosition, moveTarget }: { look: CharacterLook; area: string; onPosition: (x: number, z: number) => void; moveTarget: { x: number; z: number } | null }) {
   const isQuiet = ["Maitama", "Asokoro", "Guzape"].includes(area);
   const isCentral = area === "Central Area";
   const isWuse = area === "Wuse 2";
@@ -482,16 +514,85 @@ function StreetScene({ look, area, onPosition }: { look: CharacterLook; area: st
       </group>
       {vehicles.map((vehicle) => <MovingCar key={vehicle.startX + ":" + vehicle.z} {...vehicle} />)}
       {people.map((person, index) => <AmbientPedestrian key={index} {...person} />)}
-      <Character look={look} onPosition={onPosition} streetMode showCrown />
+      <Character look={look} onPosition={onPosition} moveTarget={moveTarget} streetMode showCrown />
       <Text position={[0, 3.8, -5.4]} rotation={[0, 0, 0]} fontSize={0.38} color="#153c37" anchorX="center">{streetLabel}</Text>
       <Environment preset="city" />
     </>
   );
 }
 
-export default function WorldHome({ look, sceneId, immersive = false, worldScene = "home", area = "Nyanya" }: { look: CharacterLook; sceneId: string; immersive?: boolean; worldScene?: "home" | "street"; area?: string }) {
+
+
+function PalmTree({ position }: { position: [number, number, number] }) {
+  return (
+    <group position={position}>
+      <mesh position={[0, 1.05, 0]} castShadow><cylinderGeometry args={[0.13, 0.2, 2.1, 7]} /><meshStandardMaterial color="#8a5c3b" roughness={1} /></mesh>
+      {Array.from({ length: 7 }, (_, i) => {
+        const angle = (i / 7) * Math.PI * 2;
+        return <mesh key={i} position={[Math.cos(angle) * 0.75, 2.05 + (i % 2) * 0.08, Math.sin(angle) * 0.75]} rotation={[0.12, -angle, -0.38]} castShadow><coneGeometry args={[0.34, 1.5, 5]} /><meshStandardMaterial color={i % 2 ? "#247b5a" : "#32916a"} roughness={1} /></mesh>;
+      })}
+    </group>
+  );
+}
+
+function MosqueScene({ look, onPosition, moveTarget }: { look: CharacterLook; onPosition: (x: number, z: number) => void; moveTarget: { x: number; z: number } | null }) {
+  const worshippers: AmbientPedestrianProps[] = [
+    { x: -4.8, z: 2.3, shirt: "#f3eee2", trousers: "#e8e1d2", skin: "#75462f", hair: "#171514", walking: true },
+    { x: 4.7, z: 1.8, shirt: "#27715e", trousers: "#26374b", skin: "#603923", hair: "#171514", gender: "female", hairStyle: "braids", walking: true },
+    { x: -5.2, z: -1.8, shirt: "#315a88", trousers: "#d3c4a6", skin: "#8d5a3b", hair: "#171514" },
+    { x: 5.6, z: -3.8, shirt: "#d2b45c", trousers: "#26374b", skin: "#a66e49", hair: "#171514", waving: true },
+  ];
+
+  return (
+    <>
+      <color attach="background" args={["#b7d9e9"]} />
+      <ambientLight intensity={1.35} />
+      <hemisphereLight args={["#f8f5e9", "#78846c", 1.25]} />
+      <directionalLight position={[7, 13, 8]} intensity={2.1} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.06, 0]} receiveShadow><planeGeometry args={[19, 16]} /><meshStandardMaterial color="#d2c9b9" roughness={0.96} /></mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 1.5]} receiveShadow><planeGeometry args={[11, 8]} /><meshStandardMaterial color="#b6a58a" roughness={1} /></mesh>
+      {Array.from({ length: 5 }, (_, row) => Array.from({ length: 5 }, (_, col) => <mesh key={row + ":" + col} position={[-3.8 + col * 1.9, 0.025, -4.4 + row * 0.95]}><boxGeometry args={[1.55, 0.025, 0.72]} /><meshStandardMaterial color={(row + col) % 2 ? "#1b7568" : "#bb8a4c"} roughness={0.9} /></mesh>))}
+      <group position={[0, 0, -4.5]}>
+        <mesh position={[0, 1.55, 0]} castShadow receiveShadow><boxGeometry args={[7.3, 3.1, 3.9]} /><meshStandardMaterial color="#eee9db" roughness={0.85} /></mesh>
+        <mesh position={[0, 3.16, 0]} castShadow><boxGeometry args={[7.8, 0.18, 4.35]} /><meshStandardMaterial color="#b49a48" roughness={0.55} metalness={0.15} /></mesh>
+        <mesh position={[0, 3.9, 0]} castShadow><sphereGeometry args={[1.35, 18, 12]} /><meshStandardMaterial color="#c69d27" metalness={0.58} roughness={0.3} /></mesh>
+        <mesh position={[0, 4.9, 0]}><cylinderGeometry args={[0.09, 0.09, 0.5, 8]} /><meshStandardMaterial color="#b89a39" metalness={0.6} /></mesh>
+        {[-2.3, 0, 2.3].map((x) => <mesh key={x} position={[x, 1.05, 2.02]}><boxGeometry args={[0.86, 2.1, 0.1]} /><meshStandardMaterial color="#1e4b3e" roughness={0.85} /></mesh>)}
+        {[-3.4, -1.8, 0, 1.8, 3.4].map((x) => <group key={x} position={[x, 0, 2.25]}><mesh position={[0, 1.3, 0]} castShadow><cylinderGeometry args={[0.13, 0.16, 2.6, 10]} /><meshStandardMaterial color="#f8f4e9" roughness={0.65} /></mesh><mesh position={[0, 2.62, 0]}><cylinderGeometry args={[0.19, 0.19, 0.08, 10]} /><meshStandardMaterial color="#b99b48" /></mesh></group>)}
+        {[-4.2, 4.2].map((x) => <group key={x} position={[x, 0, -0.1]}><mesh position={[0, 2.1, 0]} castShadow><cylinderGeometry args={[0.28, 0.4, 4.2, 10]} /><meshStandardMaterial color="#f5f0e4" /></mesh><mesh position={[0, 4.38, 0]}><coneGeometry args={[0.42, 0.62, 10]} /><meshStandardMaterial color="#c7a13c" metalness={0.3} /></mesh><mesh position={[0, 4.75, 0]}><coneGeometry args={[0.2, 0.45, 10]} /><meshStandardMaterial color="#f5f0e4" /></mesh></group>)}
+      </group>
+      <PalmTree position={[-7.2, 0, -1.2]} />
+      <PalmTree position={[7.3, 0, -0.7]} />
+      <PalmTree position={[-7.2, 0, 5.1]} />
+      <group position={[0, 0, 4.5]}>
+        <mesh position={[0, 0.12, 0]}><cylinderGeometry args={[1.6, 1.6, 0.22, 28]} /><meshStandardMaterial color="#bfae8c" roughness={0.94} /></mesh>
+        <mesh position={[0, 0.25, 0]}><cylinderGeometry args={[1.24, 1.24, 0.08, 28]} /><meshStandardMaterial color="#e7e0d1" /></mesh>
+      </group>
+      {worshippers.map((person, index) => <AmbientPedestrian key={index} {...person} />)}
+      <Character look={look} onPosition={onPosition} moveTarget={moveTarget} streetMode showCrown />
+      <Text position={[0, 5.65, -4.5]} fontSize={0.34} color="#17574b" anchorX="center">ABUJA NATIONAL MOSQUE</Text>
+      <Text position={[0, 0.4, 6.6]} fontSize={0.24} color="#536b61" anchorX="center">COURTYARD · CENTRAL AREA</Text>
+      <Environment preset="city" />
+    </>
+  );
+}
+
+function ClickGround({ width, depth, onMoveTo }: { width: number; depth: number; onMoveTo: (x: number, z: number) => void }) {
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.035, 0]} onPointerDown={(event) => {
+      event.stopPropagation();
+      onMoveTo(event.point.x, event.point.z);
+    }}>
+      <planeGeometry args={[width, depth]} />
+      <meshBasicMaterial transparent opacity={0} depthWrite={false} side={THREE.DoubleSide} />
+    </mesh>
+  );
+}
+
+export default function WorldHome({ look, sceneId, immersive = false, worldScene = "home", area = "Nyanya" }: { look: CharacterLook; sceneId: string; immersive?: boolean; worldScene?: "home" | "street" | "mosque"; area?: string }) {
   const [position, setPosition] = useState({ x: 0, z: 0 });
-  const homeTitle = worldScene === "street" ? `${area.toUpperCase()} STREET` : sceneId === "guzape_mansion_v1" ? "GUZAPE MANSION" : "NYANYA SHARED ROOM";
+  const [moveTarget, setMoveTarget] = useState<{ x: number; z: number } | null>(null);
+  const homeTitle = worldScene === "mosque" ? "ABUJA NATIONAL MOSQUE" : worldScene === "street" ? `${area.toUpperCase()} STREET` : sceneId === "guzape_mansion_v1" ? "GUZAPE MANSION" : "NYANYA SHARED ROOM";
 
   const positionLabel = useMemo(() => `Room position: ${position.x.toFixed(1)}, ${position.z.toFixed(1)}`, [position]);
 
@@ -505,12 +606,19 @@ export default function WorldHome({ look, sceneId, immersive = false, worldScene
         <div className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-200">W A S D / Arrow keys to move</div>
       </div>}
       <div className={immersive ? "absolute inset-0 h-full w-full" : "relative h-[520px] w-full sm:h-[620px]"}>
-        <Canvas shadows dpr={[1, 1.5]} camera={worldScene === "street" ? { position: [12, 10, 13], fov: 42 } : { position: [7, 7.8, 8], fov: 36 }}>
+        <Canvas shadows dpr={[1, 1.5]} camera={worldScene === "home" ? { position: [7, 7.8, 8], fov: 36 } : worldScene === "mosque" ? { position: [9, 9, 11], fov: 43 } : { position: [12, 10, 13], fov: 42 }}>
           <Suspense fallback={null}>
             {worldScene === "street"
-              ? <StreetScene look={look} area={area} onPosition={(x, z) => setPosition({ x, z })} />
-              : <RoomScene look={look} onPosition={(x, z) => setPosition({ x, z })} />}
-            <OrbitControls target={worldScene === "street" ? [0, 0.7, 0] : [0, 0.7, 0]} minDistance={worldScene === "street" ? 9 : 7} maxDistance={worldScene === "street" ? 19 : 13} minPolarAngle={0.35} maxPolarAngle={1.15} enablePan={false} />
+              ? <StreetScene look={look} area={area} moveTarget={moveTarget} onPosition={(x, z) => setPosition({ x, z })} />
+              : worldScene === "mosque"
+                ? <MosqueScene look={look} moveTarget={moveTarget} onPosition={(x, z) => setPosition({ x, z })} />
+                : <RoomScene look={look} moveTarget={moveTarget} onPosition={(x, z) => setPosition({ x, z })} />}
+            <ClickGround
+              width={worldScene === "home" ? (sceneId === "guzape_mansion_v1" ? 13 : 9) : worldScene === "mosque" ? 18 : 42}
+              depth={worldScene === "home" ? (sceneId === "guzape_mansion_v1" ? 11 : 8) : worldScene === "mosque" ? 15 : 30}
+              onMoveTo={(x, z) => setMoveTarget({ x, z })}
+            />
+            <OrbitControls target={[0, 0.7, 0]} minDistance={worldScene === "home" ? 7 : 9} maxDistance={worldScene === "home" ? 13 : 19} minPolarAngle={0.35} maxPolarAngle={1.15} enablePan={false} />
           </Suspense>
         </Canvas>
         {!immersive && <div className="pointer-events-none absolute bottom-4 left-4 rounded-xl border border-white/10 bg-black/55 px-3 py-2 text-xs text-slate-200 backdrop-blur">{positionLabel}</div>}
