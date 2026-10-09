@@ -290,6 +290,7 @@ export default function GameShell({ player }: { player: Player }) {
       <main className="relative h-[100dvh] w-screen overflow-hidden bg-sky-200 text-slate-950">
         <div className="absolute inset-0">
           <WorldHome
+            key={`${worldScene}:${currentArea}`}
             sceneId={player.background === "rich" ? "guzape_mansion_v1" : player.homeSceneId}
             look={{ gender: player.gender, skinTone: player.skinTone, hairstyle: player.hairstyle, hairColor: player.hairColor, outfitTop: player.outfitTop, outfitBottom: player.outfitBottom, outfitShoes: player.outfitShoes, heightCm: player.heightCm, background: player.background }}
             immersive
@@ -419,7 +420,7 @@ export default function GameShell({ player }: { player: Player }) {
                 </button>)}
               </div>
             </div>
-            <div className="mt-5 flex items-end justify-between gap-3"><div><h3 className="text-sm font-black">Landmarks & places</h3><p className="mt-1 text-xs text-slate-500">Start with a destination that has its own environment.</p></div><span className="rounded-full bg-white px-3 py-1 text-[10px] font-bold text-slate-500">{pointDestinations.length} destinations</span></div>
+            <div className="mt-5 flex items-end justify-between gap-3"><div><h3 className="text-sm font-black">Landmarks & places</h3><p className="mt-1 text-xs text-slate-500">These destinations route you to their district; the National Mosque opens a dedicated courtyard scene.</p></div><span className="rounded-full bg-white px-3 py-1 text-[10px] font-bold text-slate-500">{pointDestinations.length} destinations</span></div>
             <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {pointDestinations.map((place) => <button key={place.name} onClick={() => void travel(place.area, place.name)} disabled={travelling} className={`rounded-xl border bg-white p-3 text-left transition hover:border-emerald-400 hover:shadow-sm ${currentPoi === place.name ? "border-emerald-600 ring-1 ring-emerald-200" : "border-slate-200"}`}>
                 <div className="flex items-center justify-between gap-2"><span className="text-sm font-black">{place.name}</span><span className="rounded-full bg-emerald-50 px-2 py-1 text-[9px] font-bold text-emerald-800">{place.type}</span></div>
