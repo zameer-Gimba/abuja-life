@@ -302,11 +302,13 @@ type AmbientPedestrianProps = {
   trousers: string;
   skin: string;
   hair: string;
+  gender?: "male" | "female";
+  hairStyle?: "low_cut" | "natural_puff" | "braids";
   walking?: boolean;
   waving?: boolean;
 };
 
-function AmbientPedestrian({ x, z, shirt, trousers, skin, hair, walking = false, waving = false }: AmbientPedestrianProps) {
+function AmbientPedestrian({ x, z, shirt, trousers, skin, hair, gender = "male", hairStyle = "low_cut", walking = false, waving = false }: AmbientPedestrianProps) {
   const root = useRef<THREE.Group>(null);
   const waveArm = useRef<THREE.Mesh>(null);
 
@@ -319,7 +321,13 @@ function AmbientPedestrian({ x, z, shirt, trousers, skin, hair, walking = false,
     <group ref={root} position={[x, 0, z]}>
       <mesh position={[0, 0.63, 0]} castShadow><capsuleGeometry args={[0.14, 0.55, 4, 8]} /><meshStandardMaterial color={shirt} roughness={0.86} /></mesh>
       <mesh position={[0, 1.12, 0]} castShadow><sphereGeometry args={[0.135, 10, 8]} /><meshStandardMaterial color={skin} roughness={0.9} /></mesh>
-      <mesh position={[0, 1.19, -0.01]} castShadow><sphereGeometry args={[0.139, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.48]} /><meshStandardMaterial color={hair} roughness={1} /></mesh>
+      {hairStyle === "natural_puff" ? <group position={[0, 1.2, -0.015]}>
+        <mesh position={[0, 0, 0]} castShadow><sphereGeometry args={[0.14, 10, 8]} /><meshStandardMaterial color={hair} roughness={1} /></mesh>
+        <mesh position={[0, 0.1, -0.025]} castShadow><sphereGeometry args={[0.14, 10, 8]} /><meshStandardMaterial color={hair} roughness={1} /></mesh>
+      </group> : hairStyle === "braids" ? <group position={[0, 1.17, -0.01]}>
+        <mesh castShadow><sphereGeometry args={[0.14, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.48]} /><meshStandardMaterial color={hair} roughness={1} /></mesh>
+        {[-0.1, 0.1].map((side) => <mesh key={side} position={[side, -0.08, 0]} castShadow><cylinderGeometry args={[0.035, 0.03, 0.3, 6]} /><meshStandardMaterial color={hair} roughness={1} /></mesh>)}
+      </group> : <mesh position={[0, 1.19, -0.01]} castShadow><sphereGeometry args={[gender === "female" ? 0.145 : 0.139, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.48]} /><meshStandardMaterial color={hair} roughness={1} /></mesh>}
       <mesh position={[-0.07, 0.18, 0]} castShadow><capsuleGeometry args={[0.052, 0.3, 3, 6]} /><meshStandardMaterial color={trousers} /></mesh>
       <mesh position={[0.07, 0.18, 0]} castShadow><capsuleGeometry args={[0.052, 0.3, 3, 6]} /><meshStandardMaterial color={trousers} /></mesh>
       <mesh position={[-0.19, 0.72, 0]} rotation={[0, 0, 0.08]}><capsuleGeometry args={[0.045, 0.28, 3, 6]} /><meshStandardMaterial color={skin} /></mesh>
