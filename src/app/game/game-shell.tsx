@@ -411,6 +411,24 @@ export default function GameShell({ player }: { player: Player }) {
           <div className="rounded-2xl border border-slate-200 bg-white p-5"><div className="flex items-center gap-2"><Home size={17} className="text-emerald-600" /><span className="font-bold">Home</span></div><p className="mt-3 text-lg font-black">{player.homeArea}</p><p className="text-sm text-slate-500">{player.housingType}</p><div className="mt-4 flex items-center gap-2 text-xs font-semibold text-slate-500"><Car size={14} /> {player.hasVehicle ? player.vehicleName ?? "Vehicle owned" : "No vehicle yet"}</div></div>
         </aside>
       </div>
+
+      <nav className="fixed bottom-3 left-1/2 z-40 flex -translate-x-1/2 items-center gap-1 rounded-2xl border border-white/80 bg-white/95 p-1.5 shadow-xl backdrop-blur">
+        <button onClick={() => openView("world")} className="flex min-w-[70px] flex-col items-center gap-1 rounded-xl px-4 py-2 text-slate-600 hover:bg-slate-100"><Home size={18} /><span className="text-[10px] font-bold">Home</span></button>
+        <button onClick={() => openView("map")} className={`flex min-w-[70px] flex-col items-center gap-1 rounded-xl px-4 py-2 ${view === "map" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"}`}><Map size={18} /><span className="text-[10px] font-bold">Map</span></button>
+        <button onClick={() => setPhoneOpen(true)} className="flex min-w-[70px] flex-col items-center gap-1 rounded-xl px-4 py-2 text-slate-600 hover:bg-slate-100"><Smartphone size={18} /><span className="text-[10px] font-bold">Phone</span></button>
+      </nav>
+
+      {phoneOpen && <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/30 p-3 pb-24 backdrop-blur-[2px] sm:items-center sm:pb-3" onClick={() => setPhoneOpen(false)}>
+        <section className="w-full max-w-sm rounded-[28px] border border-white/80 bg-white p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+          <div className="flex items-center justify-between"><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">In-game phone</p><h2 className="mt-1 text-xl font-black">Phone</h2></div><button onClick={() => setPhoneOpen(false)} aria-label="Close phone" className="rounded-full bg-slate-100 p-2"><X size={18} /></button></div>
+          <div className="mt-4 space-y-2">
+            <button onClick={() => void performActivity("call_mummy")} disabled={activityBusy} className="flex w-full items-center gap-3 rounded-2xl bg-slate-50 p-4 text-left hover:bg-emerald-50"><PhoneCall className="text-emerald-600" size={20} /><span><span className="block text-sm font-black">Call Mummy</span><span className="block text-xs text-slate-500">Family contact · in-game only</span></span></button>
+            <button onClick={() => { setPhoneOpen(false); openView("map"); }} className="flex w-full items-center gap-3 rounded-2xl bg-slate-50 p-4 text-left hover:bg-blue-50"><Map className="text-blue-600" size={20} /><span><span className="block text-sm font-black">Find a place</span><span className="block text-xs text-slate-500">Open Abuja destinations</span></span></button>
+          </div>
+          {activityToast && <p role="status" className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">{activityToast}</p>}
+          <p className="mt-4 text-xs leading-5 text-slate-500">Phone features are added only when connected to game state. Calls are in-game only.</p>
+        </section>
+      </div>}
     </main>
   );
 }
