@@ -6,7 +6,7 @@ import BankPanel from "./bank-panel";
 import PropertyPanel from "./property-panel";
 import VehiclePanel from "./vehicle-panel";
 import WorldHome from "./world-home";
-import { ArrowRight, Banknote, Building2, Car, Compass, Fuel, Home, Map, Menu, Shield, Sparkles, Users, Wallet, X, Zap } from "lucide-react";
+import { Activity, ArrowRight, Banknote, Building2, Car, Compass, Fuel, Home, Map, Menu, PhoneCall, Shield, Smartphone, Sparkles, Users, Wallet, X, Zap } from "lucide-react";
 
 type Player = {
   id: string;
@@ -36,6 +36,7 @@ type Player = {
   streetSense: number;
   connectLevel: number;
   health: number;
+  fitness: number;
   happiness: number;
   walletBalance: string;
   bankBalance: string;
@@ -90,6 +91,16 @@ export default function GameShell({ player }: { player: Player }) {
   const [jobLoading, setJobLoading] = useState(false);
   const [jobNotice, setJobNotice] = useState("");
   const [activeJob, setActiveJob] = useState(player.currentJob);
+  const [fitness, setFitness] = useState(player.fitness);
+  const [health, setHealth] = useState(player.health);
+  const [happiness, setHappiness] = useState(player.happiness);
+  const [aura, setAura] = useState(player.aura);
+  const [connection, setConnection] = useState(player.connectLevel);
+  const [worldScene, setWorldScene] = useState<"home" | "street">("home");
+  const [activityOpen, setActivityOpen] = useState(false);
+  const [phoneOpen, setPhoneOpen] = useState(false);
+  const [activityBusy, setActivityBusy] = useState(false);
+  const [activityToast, setActivityToast] = useState("");
 
   const cash = useMemo(() => Number(balance).toLocaleString(), [balance]);
   const displayedNetWorth = useMemo(() => Number(netWorth).toLocaleString(), [netWorth]);
@@ -180,6 +191,136 @@ export default function GameShell({ player }: { player: Player }) {
     } finally {
       setTravelling(false);
     }
+  }
+
+  async function performActivity(activity: "walk" | "dance" | "eat" | "call_mummy" | "greet_neighbour") {
+    if (activityBusy) return;
+    setActivityBusy(true);
+    setActivityToast("");
+    try {
+      const response = await fetch("/api/game/activity", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ activity }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setActivityToast(data.error ?? "That activity could not be completed.");
+        return;
+      }
+      setBalance(BigInt(data.walletBalance));
+      setNetWorth(BigInt(data.totalNetWorth));
+      setFitness(data.fitness);
+      setHealth(data.health);
+      setHappiness(data.happiness);
+      setAura(data.aura);
+      setConnection(data.connectLevel);
+      const rewardText = data.reward > 0 ? ` +₦${Number(data.reward).toLocaleString()} Game Naira.` : "";
+      const costText = data.cost > 0 ? ` −₦${Number(data.cost).toLocaleString()}.` : "";
+      const message = `${data.message}${rewardText}${costText}`;
+      setActivityToast(message);
+      setNotice(message);
+    } catch {
+      setActivityToast("Could not connect to the activities service.");
+    } finally {
+      setActivityBusy(false);
+    }
+  }
+
+  if (view === "world") {
+    return (
+      <main className="relative h-[100dvh] w-screen overflow-hidden bg-sky-200 text-slate-950">
+        <div className="absolute inset-0">
+          <WorldHome
+            sceneId={player.background === "rich" ? "guzape_mansion_v1" : player.homeSceneId}
+            look={{ gender: player.gender, skinTone: player.skinTone, hairstyle: player.hairstyle, hairColor: player.hairColor, outfitTop: player.outfitTop, outfitBottom: player.outfitBottom, outfitShoes: player.outfitShoes, heightCm: player.heightCm, background: player.background }}
+            immersive
+            worldScene={worldScene}
+            area={currentArea}
+          />
+        </div>
+
+        <div className="pointer-events-none absolute inset-x-0 top-3 flex justify-center px-3">
+          <div className="pointer-events-auto flex max-w-full items-center gap-3 rounded-full border border-white/70 bg-white/90 px-4 py-2 shadow-lg backdrop-blur-xl sm:gap-4 sm:px-6">
+            <div className="hidden text-sm font-bold sm:block">{currentArea} · Abuja</div>
+            <span className="hidden h-5 w-px bg-slate-200 sm:block" />
+            <span className="text-xs font-semibold text-slate-600">Mood</span>
+            <span className="text-sm font-black text-emerald-600">{happiness >= 80 ? "Very Happy" : happiness >= 55 ? "Good" : "Low"}</span>
+            <span className="hidden h-5 w-px bg-slate-200 sm:block" />
+            <span className="text-xs font-semibold text-slate-500">Fitness {fitness}</span>
+            <span className="hidden h-5 w-px bg-slate-200 sm:block" />
+            <span className="whitespace-nowrap text-sm font-black">₦{cash}</span>
+            <button onClick={() => setActivityOpen(true)} className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-lg font-black text-white shadow-sm" aria-label="Open activities">+</button>
+          </div>
+        </div>
+
+        <div className="absolute left-3 top-20 flex max-w-[185px] flex-col gap-2 sm:left-4 sm:max-w-[225px]">
+          <button onClick={() => performActivity("eat")} disabled={activityBusy} className="rounded-2xl border border-white/80 bg-white/90 p-3 text-left shadow-lg backdrop-blur transition hover:bg-white disabled:opacity-60">
+            <span className="block text-xs font-black">Eat something</span>
+            <span className="mt-1 block text-[11px] text-slate-500">Meal costs ₦180 · restores health</span>
+          </button>
+          <div className="rounded-2xl border border-white/80 bg-white/90 p-3 shadow-lg backdrop-blur">
+            <div className="mb-2 flex items-center justify-between text-[11px] font-bold"><span>Health</span><span>{health}/100</span></div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-rose-500 transition-all" style={{ width: `${health}%` }} /></div>
+            <div className="mb-2 mt-3 flex items-center justify-between text-[11px] font-bold"><span>Fitness</span><span>{fitness}/100</span></div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${fitness}%` }} /></div>
+            <div className="mb-2 mt-3 flex items-center justify-between text-[11px] font-bold"><span>Happiness</span><span>{happiness}/100</span></div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-amber-400 transition-all" style={{ width: `${happiness}%` }} /></div>
+          </div>
+        </div>
+
+        <div className="absolute right-3 top-20 flex flex-col items-end gap-2 sm:right-4">
+          <div className="rounded-xl border border-white/70 bg-white/85 px-3 py-2 text-right shadow-md backdrop-blur">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Character</p>
+            <p className="text-xs font-black">{player.displayName}</p>
+            <p className="text-[10px] text-slate-500">Aura {aura} · Connection {connection}</p>
+          </div>
+          <button onClick={() => setWorldScene(worldScene === "home" ? "street" : "home")} className="rounded-xl bg-slate-950/90 px-3 py-2 text-xs font-black text-white shadow-lg transition hover:bg-slate-800">
+            {worldScene === "home" ? "Step outside →" : "← Go home"}
+          </button>
+        </div>
+
+        {activityToast && <div role="status" className="absolute left-1/2 top-[86px] z-30 flex w-[min(92vw,460px)] -translate-x-1/2 items-start justify-between gap-3 rounded-2xl border border-emerald-200 bg-white/95 px-4 py-3 text-sm font-semibold text-slate-800 shadow-xl backdrop-blur">
+          <span>{activityToast}</span><button onClick={() => setActivityToast("")} aria-label="Dismiss notification" className="rounded-full p-1 text-slate-400 hover:bg-slate-100"><X size={15} /></button>
+        </div>}
+
+        {activityOpen && <div className="absolute inset-0 z-40 flex items-end justify-center bg-slate-950/30 p-3 pb-24 backdrop-blur-[2px] sm:items-center sm:pb-3" onClick={() => setActivityOpen(false)}>
+          <section className="max-h-[72dvh] w-full max-w-xl overflow-y-auto rounded-[28px] border border-white/80 bg-white p-5 shadow-2xl sm:p-6" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center justify-between"><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">Daily life</p><h2 className="mt-1 text-xl font-black">What should you do?</h2></div><button onClick={() => setActivityOpen(false)} aria-label="Close activities" className="rounded-full bg-slate-100 p-2"><X size={18} /></button></div>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              {[
+                { id: "walk", label: "Take a walk", detail: "Fitness +2 · Earn ₦25", icon: "WALK" },
+                { id: "dance", label: "Dance to Afrobeats", detail: "Fitness +3 · Mood +4 · Earn ₦50", icon: "DANCE" },
+                { id: "eat", label: "Eat something", detail: "Health +8 · Costs ₦180", icon: "MEAL" },
+                { id: "greet_neighbour", label: "Greet a neighbour", detail: "Connection +1 · Earn ₦10", icon: "SOCIAL" },
+                { id: "call_mummy", label: "Call Mummy", detail: "Family call · Mood +4", icon: "CALL" },
+              ].map((item) => <button key={item.id} disabled={activityBusy} onClick={() => void performActivity(item.id as "walk" | "dance" | "eat" | "call_mummy" | "greet_neighbour")} className="rounded-2xl border border-slate-200 p-4 text-left transition hover:border-emerald-300 hover:bg-emerald-50 disabled:opacity-60"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-[10px] font-black text-slate-600">{item.icon}</span><span className="mt-3 block text-sm font-black">{item.label}</span><span className="mt-1 block text-xs leading-5 text-slate-500">{item.detail}</span></button>)}
+            </div>
+            {activityBusy && <p className="mt-4 text-xs font-semibold text-slate-500">Saving activity...</p>}
+            {activityToast && <p className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">{activityToast}</p>}
+          </section>
+        </div>}
+
+        {phoneOpen && <div className="absolute inset-0 z-40 flex items-end justify-center bg-slate-950/30 p-3 pb-24 backdrop-blur-[2px] sm:items-center sm:pb-3" onClick={() => setPhoneOpen(false)}>
+          <section className="w-full max-w-sm rounded-[28px] border border-white/80 bg-white p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center justify-between"><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">In-game phone</p><h2 className="mt-1 text-xl font-black">Phone</h2></div><button onClick={() => setPhoneOpen(false)} aria-label="Close phone" className="rounded-full bg-slate-100 p-2"><X size={18} /></button></div>
+            <div className="mt-4 space-y-2">
+              <button onClick={() => void performActivity("call_mummy")} disabled={activityBusy} className="flex w-full items-center gap-3 rounded-2xl bg-slate-50 p-4 text-left hover:bg-emerald-50"><PhoneCall className="text-emerald-600" size={20} /><span><span className="block text-sm font-black">Call Mummy</span><span className="block text-xs text-slate-500">Family contact · in-game only</span></span></button>
+              <button onClick={() => { setPhoneOpen(false); openView("map"); }} className="flex w-full items-center gap-3 rounded-2xl bg-slate-50 p-4 text-left hover:bg-blue-50"><Map className="text-blue-600" size={20} /><span><span className="block text-sm font-black">Find a place</span><span className="block text-xs text-slate-500">Open Abuja destinations</span></span></button>
+            </div>
+            <p className="mt-4 text-xs leading-5 text-slate-500">Phone features are added only when the action is connected to game state. Calls do not reach real-world phone numbers.</p>
+          </section>
+        </div>}
+
+        <nav className="absolute bottom-3 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1 rounded-2xl border border-white/80 bg-white/95 p-1.5 shadow-xl backdrop-blur">
+          <button onClick={() => { setWorldScene("home"); setActivityOpen(false); setPhoneOpen(false); }} className="flex min-w-[68px] flex-col items-center gap-1 rounded-xl bg-slate-900 px-4 py-2 text-white"><Home size={18} /><span className="text-[10px] font-bold">Home</span></button>
+          <button onClick={() => { setActivityOpen(false); setPhoneOpen(false); openView("map"); }} className="flex min-w-[68px] flex-col items-center gap-1 rounded-xl px-4 py-2 text-slate-600 hover:bg-slate-100"><Map size={18} /><span className="text-[10px] font-bold">Map</span></button>
+          <button onClick={() => { setPhoneOpen(true); setActivityOpen(false); }} className="flex min-w-[68px] flex-col items-center gap-1 rounded-xl px-4 py-2 text-slate-600 hover:bg-slate-100"><Smartphone size={18} /><span className="text-[10px] font-bold">Phone</span></button>
+          <button onClick={() => { setActivityOpen(true); setPhoneOpen(false); }} className="flex min-w-[68px] flex-col items-center gap-1 rounded-xl px-4 py-2 text-slate-600 hover:bg-slate-100"><Activity size={18} /><span className="text-[10px] font-bold">Activities</span></button>
+        </nav>
+        <div className="pointer-events-none absolute bottom-4 left-3 hidden rounded-xl border border-white/80 bg-white/85 px-3 py-2 text-[11px] font-semibold text-slate-600 shadow sm:block">WASD / arrow keys to move</div>
+      </main>
+    );
   }
 
   return (
