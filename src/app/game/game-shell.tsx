@@ -330,7 +330,7 @@ export default function GameShell({ player }: { player: Player }) {
         </div>}
 
         <nav className="absolute bottom-3 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1 rounded-2xl border border-white/80 bg-white/95 p-1.5 shadow-xl backdrop-blur">
-          <button onClick={() => { setWorldScene("home"); setActivityOpen(false); setPhoneOpen(false); }} className="flex min-w-[68px] flex-col items-center gap-1 rounded-xl bg-slate-900 px-4 py-2 text-white"><Home size={18} /><span className="text-[10px] font-bold">Home</span></button>
+          <button onClick={() => { setWorldScene(currentArea === player.homeArea ? "home" : "street"); setActivityOpen(false); setPhoneOpen(false); }} className="flex min-w-[68px] flex-col items-center gap-1 rounded-xl bg-slate-900 px-4 py-2 text-white"><Home size={18} /><span className="text-[10px] font-bold">World</span></button>
           <button onClick={() => { setActivityOpen(false); setPhoneOpen(false); openView("map"); }} className="flex min-w-[68px] flex-col items-center gap-1 rounded-xl px-4 py-2 text-slate-600 hover:bg-slate-100"><Map size={18} /><span className="text-[10px] font-bold">Map</span></button>
           <button onClick={() => { setPhoneOpen(true); setActivityOpen(false); }} className="flex min-w-[68px] flex-col items-center gap-1 rounded-xl px-4 py-2 text-slate-600 hover:bg-slate-100"><Smartphone size={18} /><span className="text-[10px] font-bold">Phone</span></button>
           <button onClick={() => { setActivityOpen(true); setPhoneOpen(false); }} className="flex min-w-[68px] flex-col items-center gap-1 rounded-xl px-4 py-2 text-slate-600 hover:bg-slate-100"><Activity size={18} /><span className="text-[10px] font-bold">Activities</span></button>
