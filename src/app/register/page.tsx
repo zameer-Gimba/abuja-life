@@ -10,6 +10,7 @@ const backgrounds = [
 
 export default function RegisterPage() {
   const [background, setBackground] = useState("poor");
+  const [gender, setGender] = useState("male");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -26,6 +27,7 @@ export default function RegisterPage() {
         email: form.get("email"),
         password: form.get("password"),
         background,
+        gender,
       }),
     });
     const result = await response.json();
@@ -71,6 +73,22 @@ export default function RegisterPage() {
             </div>
 
             <label className="block"><span className="text-sm font-bold text-slate-700">Password</span><input type="password" name="password" placeholder="Create a strong password" className="mt-2 h-12 w-full rounded-xl border border-slate-200 px-4 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" /></label>
+
+            <fieldset>
+              <legend className="text-sm font-bold text-slate-700">Character</legend>
+              <p className="mt-1 text-sm text-slate-500">Choose the character you want to play. Your character’s gender and appearance stay consistent in the world.</p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                {[
+                  { id: "male", name: "Male character", detail: "A Nigerian male character preset." },
+                  { id: "female", name: "Female character", detail: "A Nigerian female character preset." },
+                ].map((item) => (
+                  <button type="button" key={item.id} onClick={() => setGender(item.id)} className={`rounded-2xl border p-4 text-left transition ${gender === item.id ? "border-blue-300 bg-blue-50 ring-2 ring-blue-500/30" : "border-slate-200 bg-white hover:border-blue-200"}`}>
+                    <div className="flex items-center justify-between"><span className="font-black text-slate-950">{item.name}</span><span className={`h-4 w-4 rounded-full border-2 ${gender === item.id ? "border-blue-600 bg-blue-600" : "border-slate-300"}`} /></div>
+                    <p className="mt-2 text-sm leading-6 text-slate-500">{item.detail}</p>
+                  </button>
+                ))}
+              </div>
+            </fieldset>
 
             <fieldset>
               <legend className="text-sm font-bold text-slate-700">Birth roll</legend>
