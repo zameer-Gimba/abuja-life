@@ -64,6 +64,17 @@ const areas = [
   { name: "Maitama", tier: "Elite", note: "Embassies & power", color: "bg-rose-500" },
 ];
 
+const pointDestinations = [
+  { name: "Abuja National Mosque", area: "Central Area", type: "Mosque", description: "Courtyard, prayer hall and community activities" },
+  { name: "National Assembly", area: "Central Area", type: "Government", description: "The National Assembly complex" },
+  { name: "City Gate", area: "Central Area", type: "Landmark", description: "The city entrance landmark" },
+  { name: "Jabi Lake", area: "Jabi", type: "Leisure", description: "Lakefront walks and relaxation" },
+  { name: "Wuse Market", area: "Wuse 2", type: "Market", description: "Everyday shopping and street activity" },
+  { name: "Aso Rock", area: "Asokoro", type: "Landmark", description: "Rock landmark and surrounding district" },
+  { name: "Millennium Park", area: "Maitama", type: "Park", description: "Green space and walking paths" },
+  { name: "Berger Junction", area: "Central Area", type: "Transport hub", description: "A busy transport interchange" },
+];
+
 const facilities = [
   ["Fuel Station", Fuel, "Keep your vehicle moving"],
   ["Hospital", Shield, "Look after your health"],
@@ -98,7 +109,10 @@ export default function GameShell({ player }: { player: Player }) {
   const [connection, setConnection] = useState(player.connectLevel);
   const [hasVehicle, setHasVehicle] = useState(player.hasVehicle);
   const [vehicleFuel, setVehicleFuel] = useState(player.vehicleFuel);
-  const [worldScene, setWorldScene] = useState<"home" | "street">("home");
+  const [worldScene, setWorldScene] = useState<"home" | "street" | "mosque">("home");
+  const [mapOpen, setMapOpen] = useState(false);
+  const [currentPoi, setCurrentPoi] = useState<string | null>(null);
+  const [journeyMessage, setJourneyMessage] = useState<string | null>(null);
   const [activityOpen, setActivityOpen] = useState(false);
   const [phoneOpen, setPhoneOpen] = useState(false);
   const [activityBusy, setActivityBusy] = useState(false);
@@ -166,12 +180,28 @@ export default function GameShell({ player }: { player: Player }) {
     }
   }
 
-  async function travel(area: string) {
-    if (area === currentArea || travelling) return;
+  async function travel(area: string, pointOfInterest?: string) {
+    if ((area === currentArea && !pointOfInterest) || travelling) return;
     setTravelling(true);
-    setNotice("Calculating your route...");
+    const destinationLabel = pointOfInterest ?? area;
+    setNotice(`Planning your trip to ${destinationLabel}...`);
+    setJourneyMessage(`On the way to ${destinationLabel}...`);
+    setMapOpen(false);
 
     try {
+      // Moving between nearby landmarks in the same district does not charge a second area fare.
+      if (pointOfInterest && area === currentArea) {
+        await new Promise<void>((resolve) => window.setTimeout(resolve, 1350));
+        setCurrentPoi(pointOfInterest);
+        setWorldScene(pointOfInterest === "Abuja National Mosque" ? "mosque" : "street");
+        setView("world");
+        const message = `You arrived at ${destinationLabel}. Click the ground to move, or use WASD / arrow keys.`;
+        setNotice(message);
+        setActivityToast(message);
+        setJourneyMessage(null);
+        return;
+      }
+
       const response = await fetch("/api/game/travel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -181,9 +211,13 @@ export default function GameShell({ player }: { player: Player }) {
 
       if (!response.ok) {
         setNotice(data.error ?? "Travel failed.");
+        setJourneyMessage(null);
+        setMapOpen(true);
         return;
       }
 
+      // Keep the route transition short and visible instead of switching scenes instantly.
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 1350));
       setCurrentArea(data.currentArea);
       setBalance(BigInt(data.walletBalance));
       setNetWorth(BigInt(data.totalNetWorth));
@@ -191,22 +225,26 @@ export default function GameShell({ player }: { player: Player }) {
       if (typeof data.happiness === "number") setHappiness(data.happiness);
       if (typeof data.vehicleFuel === "number") setVehicleFuel(data.vehicleFuel);
       const arrivalMessage = travelMode === "TREK"
-        ? `You trekked to ${data.currentArea}. +₦${Number(data.reward ?? 0).toLocaleString()} Game Naira · Fitness +2.`
+        ? `You trekked to ${destinationLabel}. +₦${Number(data.reward ?? 0).toLocaleString()} Game Naira · Fitness +2.`
         : travelMode === "PERSONAL_CAR"
-          ? `You arrived in ${data.currentArea}. Fuel −${data.fuelUsed}; car condition −1.`
-          : `You arrived in ${data.currentArea}. ${TRANSPORT_TYPES[travelMode].label} cost ₦${Number(data.cost).toLocaleString()}.`;
-      setNotice(arrivalMessage);
-      setActivityToast(arrivalMessage);
-      setWorldScene("street");
+          ? `You arrived at ${destinationLabel}. Fuel −${data.fuelUsed}; car condition −1.`
+          : `You arrived at ${destinationLabel}. ${TRANSPORT_TYPES[travelMode].label} cost ₦${Number(data.cost).toLocaleString()}.`;
+      setCurrentPoi(pointOfInterest ?? null);
+      setWorldScene(pointOfInterest === "Abuja National Mosque" ? "mosque" : "street");
       setView("world");
+      setNotice(`${arrivalMessage} Click the ground to move, or use WASD / arrow keys.`);
+      setActivityToast(arrivalMessage);
+      setJourneyMessage(null);
     } catch {
       setNotice("Could not connect to the transport system.");
+      setJourneyMessage(null);
+      setMapOpen(true);
     } finally {
       setTravelling(false);
     }
   }
 
-  async function performActivity(activity: "walk" | "dance" | "eat" | "call_mummy" | "greet_neighbour") {
+  async function performActivity(activity: "walk" | "dance" | "eat" | "call_mummy" | "greet_neighbour" | "pray_salah" | "perform_wudu" | "read_quran" | "give_sadaqah") {
     if (activityBusy) return;
     setActivityBusy(true);
     setActivityToast("");
@@ -255,7 +293,7 @@ export default function GameShell({ player }: { player: Player }) {
 
         <div className="pointer-events-none absolute inset-x-0 top-3 flex justify-center px-3">
           <div className="pointer-events-auto flex max-w-full items-center gap-3 rounded-full border border-white/70 bg-white/90 px-4 py-2 shadow-lg backdrop-blur-xl sm:gap-4 sm:px-6">
-            <div className="hidden text-sm font-bold sm:block">{currentArea} · Abuja</div>
+            <div className="hidden text-sm font-bold sm:block">{currentPoi ?? currentArea} · Abuja</div>
             <span className="hidden h-5 w-px bg-slate-200 sm:block" />
             <span className="text-xs font-semibold text-slate-600">Mood</span>
             <span className="text-sm font-black text-emerald-600">{happiness >= 80 ? "Very Happy" : happiness >= 55 ? "Good" : "Low"}</span>
@@ -289,13 +327,34 @@ export default function GameShell({ player }: { player: Player }) {
             <p className="text-[10px] text-slate-500">Aura {aura} · Connection {connection}</p>{hasVehicle && <p className="mt-1 text-[10px] font-semibold text-emerald-700">Car fuel: {vehicleFuel} L</p>}
           </div>
           <button onClick={() => {
-            if (worldScene === "home") setWorldScene("street");
-            else if (currentArea === player.homeArea) setWorldScene("home");
-            else openView("map");
+            if (worldScene === "home") {
+              setWorldScene("street");
+              setCurrentPoi(null);
+            } else if (worldScene === "mosque") {
+              setWorldScene("street");
+              setCurrentPoi(null);
+            } else if (currentArea === player.homeArea) {
+              setWorldScene("home");
+              setCurrentPoi(null);
+            } else {
+              setMapOpen(true);
+            }
           }} className="rounded-xl bg-slate-950/90 px-3 py-2 text-xs font-black text-white shadow-lg transition hover:bg-slate-800">
-            {worldScene === "home" ? "Step outside →" : currentArea === player.homeArea ? "← Enter home" : "Choose destination"}
+            {worldScene === "home" ? "Step outside →" : worldScene === "mosque" ? "← Return to street" : currentArea === player.homeArea ? "← Enter home" : "Choose destination"}
           </button>
         </div>
+
+        {worldScene === "mosque" && <div className="absolute left-3 top-[292px] z-20 w-[min(66vw,220px)] space-y-2 sm:left-4">
+          <div className="rounded-xl border border-white/80 bg-white/90 p-3 shadow-lg backdrop-blur">
+            <p className="text-xs font-black">Abuja National Mosque</p><p className="mt-1 text-[10px] text-slate-500">Courtyard activities</p>
+            <div className="mt-2 space-y-1.5">
+              <button onClick={() => void performActivity("pray_salah")} disabled={activityBusy} className="w-full rounded-lg bg-emerald-50 px-2.5 py-2 text-left text-[11px] font-bold text-emerald-900 hover:bg-emerald-100 disabled:opacity-50">Pray (Salah)</button>
+              <button onClick={() => void performActivity("perform_wudu")} disabled={activityBusy} className="w-full rounded-lg bg-white px-2.5 py-2 text-left text-[11px] font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50">Perform ablution (Wudu)</button>
+              <button onClick={() => void performActivity("read_quran")} disabled={activityBusy} className="w-full rounded-lg bg-white px-2.5 py-2 text-left text-[11px] font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50">Read the Quran</button>
+              <button onClick={() => void performActivity("give_sadaqah")} disabled={activityBusy} className="w-full rounded-lg bg-white px-2.5 py-2 text-left text-[11px] font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50">Give Sadaqah · ₦100</button>
+            </div>
+          </div>
+        </div>}
 
         {activityToast && <div role="status" className="absolute left-1/2 top-[86px] z-30 flex w-[min(92vw,460px)] -translate-x-1/2 items-start justify-between gap-3 rounded-2xl border border-emerald-200 bg-white/95 px-4 py-3 text-sm font-semibold text-slate-800 shadow-xl backdrop-blur">
           <span>{activityToast}</span><button onClick={() => setActivityToast("")} aria-label="Dismiss notification" className="rounded-full p-1 text-slate-400 hover:bg-slate-100"><X size={15} /></button>
@@ -318,20 +377,66 @@ export default function GameShell({ player }: { player: Player }) {
           </section>
         </div>}
 
+        {journeyMessage && <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#cfe0e9]/95 px-5 text-slate-950">
+          <div className="w-full max-w-sm text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-lg"><Car size={28} className="text-emerald-700" /></div>
+            <p className="mt-5 text-[10px] font-black uppercase tracking-[0.22em] text-emerald-700">Abuja Life · Journey</p>
+            <h2 className="mt-2 text-2xl font-black">{journeyMessage}</h2>
+            <p className="mt-2 text-sm text-slate-600">Leaving the current location and arriving in the next scene.</p>
+            <div className="mx-auto mt-6 flex h-12 max-w-[230px] items-center justify-center gap-3 overflow-hidden rounded-full bg-white px-4 shadow-sm">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-600" /><span className="h-1 w-16 rounded-full bg-slate-200" /><Car size={20} className="animate-pulse text-slate-700" /><span className="h-1 w-16 rounded-full bg-slate-200" /><span className="h-2 w-2 animate-pulse rounded-full bg-emerald-600" />
+            </div>
+          </div>
+        </div>}
+
+        {mapOpen && <div className="absolute inset-0 z-40 flex items-center justify-center bg-slate-950/45 p-3 backdrop-blur-sm sm:p-6" onClick={() => setMapOpen(false)}>
+          <section className="max-h-[88dvh] w-full max-w-5xl overflow-y-auto rounded-[28px] border border-white/70 bg-[#f3f7f5] p-4 text-slate-950 shadow-2xl sm:p-6" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-start justify-between gap-4">
+              <div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700">Abuja / FCT · In-game map</p><h2 className="mt-1 text-2xl font-black sm:text-3xl">Where to next?</h2><p className="mt-1 text-sm text-slate-500">Choose a district or a landmark. Your world stays behind this panel.</p></div>
+              <button onClick={() => setMapOpen(false)} aria-label="Close map" className="rounded-full bg-white p-2 shadow-sm"><X size={18} /></button>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {(Object.entries(TRANSPORT_TYPES).filter(([key]) => key !== "ONE_CHANCE") as [TravelMode, { label: string; baseCost: number }][]).map(([mode, transport]) => (
+                <button key={mode} onClick={() => setTravelMode(mode)} disabled={travelling || (mode === "PERSONAL_CAR" && !hasVehicle)} className={`rounded-full border px-3 py-2 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-40 ${travelMode === mode ? "border-emerald-700 bg-emerald-700 text-white" : "border-slate-200 bg-white text-slate-600 hover:border-emerald-400"}`}>
+                  {transport.label} <span className={travelMode === mode ? "text-emerald-100" : "text-slate-400"}>{mode === "PERSONAL_CAR" && !hasVehicle ? "buy a car first" : mode === "TREK" || mode === "PERSONAL_CAR" ? "free" : `from ₦${transport.baseCost.toLocaleString()}`}</span>
+                </button>
+              ))}
+            </div>
+            <div className="relative mt-5 overflow-hidden rounded-2xl border border-emerald-100 bg-[#dcebd8] p-3 sm:p-4">
+              <div className="pointer-events-none absolute inset-0 opacity-50" style={{ backgroundImage: "linear-gradient(26deg, transparent 46%, #a4b9a4 47%, #a4b9a4 50%, transparent 51%), linear-gradient(90deg, transparent 46%, #f8f7ec 47%, #f8f7ec 51%, transparent 52%), linear-gradient(#a6c3a5 1px, transparent 1px), linear-gradient(90deg, #a6c3a5 1px, transparent 1px)", backgroundSize: "220px 150px, 260px 180px, 36px 36px, 36px 36px" }} />
+              <div className="relative grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {areas.map((area) => <button key={area.name} onClick={() => void travel(area.name)} disabled={travelling || area.name === currentArea} className={`flex min-h-24 flex-col justify-between rounded-xl border bg-white/95 p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:cursor-default disabled:opacity-70 ${area.name === currentArea ? "border-emerald-600 ring-2 ring-emerald-200" : "border-white"}`}>
+                  <span className={`h-2.5 w-2.5 rounded-full ${area.color}`} />
+                  <span><span className="block text-sm font-black">{area.name}</span><span className="mt-0.5 block text-[10px] font-semibold text-slate-500">{area.note}</span></span>
+                  <span className="mt-2 text-[10px] font-bold text-emerald-700">{area.name === currentArea ? "You are here" : travelMode === "TREK" || travelMode === "PERSONAL_CAR" ? "Ready to go" : `₦${calculateTravelCost(currentArea, area.name, travelMode).toLocaleString()} · ${TRANSPORT_TYPES[travelMode].label}`}</span>
+                </button>)}
+              </div>
+            </div>
+            <div className="mt-5 flex items-end justify-between gap-3"><div><h3 className="text-sm font-black">Landmarks & places</h3><p className="mt-1 text-xs text-slate-500">Start with a destination that has its own environment.</p></div><span className="rounded-full bg-white px-3 py-1 text-[10px] font-bold text-slate-500">{pointDestinations.length} destinations</span></div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {pointDestinations.map((place) => <button key={place.name} onClick={() => void travel(place.area, place.name)} disabled={travelling} className={`rounded-xl border bg-white p-3 text-left transition hover:border-emerald-400 hover:shadow-sm ${currentPoi === place.name ? "border-emerald-600 ring-1 ring-emerald-200" : "border-slate-200"}`}>
+                <div className="flex items-center justify-between gap-2"><span className="text-sm font-black">{place.name}</span><span className="rounded-full bg-emerald-50 px-2 py-1 text-[9px] font-bold text-emerald-800">{place.type}</span></div>
+                <p className="mt-1 text-xs text-slate-500">{place.description}</p><p className="mt-2 text-[10px] font-bold text-slate-400">{place.area} · {place.name === "Abuja National Mosque" ? "Enter courtyard" : "Visit district"}</p>
+              </button>)}
+            </div>
+            <p className="mt-4 text-[11px] text-slate-400">More districts, streets, buildings and enterable destinations can be added as the 3D city expands.</p>
+          </section>
+        </div>}
+
         {phoneOpen && <div className="absolute inset-0 z-40 flex items-end justify-center bg-slate-950/30 p-3 pb-24 backdrop-blur-[2px] sm:items-center sm:pb-3" onClick={() => setPhoneOpen(false)}>
           <section className="w-full max-w-sm rounded-[28px] border border-white/80 bg-white p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-center justify-between"><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">In-game phone</p><h2 className="mt-1 text-xl font-black">Phone</h2></div><button onClick={() => setPhoneOpen(false)} aria-label="Close phone" className="rounded-full bg-slate-100 p-2"><X size={18} /></button></div>
             <div className="mt-4 space-y-2">
               <button onClick={() => void performActivity("call_mummy")} disabled={activityBusy} className="flex w-full items-center gap-3 rounded-2xl bg-slate-50 p-4 text-left hover:bg-emerald-50"><PhoneCall className="text-emerald-600" size={20} /><span><span className="block text-sm font-black">Call Mummy</span><span className="block text-xs text-slate-500">Family contact · in-game only</span></span></button>
-              <button onClick={() => { setPhoneOpen(false); openView("map"); }} className="flex w-full items-center gap-3 rounded-2xl bg-slate-50 p-4 text-left hover:bg-blue-50"><Map className="text-blue-600" size={20} /><span><span className="block text-sm font-black">Find a place</span><span className="block text-xs text-slate-500">Open Abuja destinations</span></span></button>
+              <button onClick={() => { setPhoneOpen(false); setMapOpen(true); }} className="flex w-full items-center gap-3 rounded-2xl bg-slate-50 p-4 text-left hover:bg-blue-50"><Map className="text-blue-600" size={20} /><span><span className="block text-sm font-black">Find a place</span><span className="block text-xs text-slate-500">Open Abuja destinations</span></span></button>
             </div>
             <p className="mt-4 text-xs leading-5 text-slate-500">Phone features are added only when the action is connected to game state. Calls do not reach real-world phone numbers.</p>
           </section>
         </div>}
 
         <nav className="absolute bottom-3 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1 rounded-2xl border border-white/80 bg-white/95 p-1.5 shadow-xl backdrop-blur">
-          <button onClick={() => { setWorldScene(currentArea === player.homeArea ? "home" : "street"); setActivityOpen(false); setPhoneOpen(false); }} className="flex min-w-[68px] flex-col items-center gap-1 rounded-xl bg-slate-900 px-4 py-2 text-white"><Home size={18} /><span className="text-[10px] font-bold">World</span></button>
-          <button onClick={() => { setActivityOpen(false); setPhoneOpen(false); openView("map"); }} className="flex min-w-[68px] flex-col items-center gap-1 rounded-xl px-4 py-2 text-slate-600 hover:bg-slate-100"><Map size={18} /><span className="text-[10px] font-bold">Map</span></button>
+          <button onClick={() => { setWorldScene(currentArea === player.homeArea ? "home" : "street"); setCurrentPoi(null); setMapOpen(false); setActivityOpen(false); setPhoneOpen(false); }} className="flex min-w-[68px] flex-col items-center gap-1 rounded-xl bg-slate-900 px-4 py-2 text-white"><Home size={18} /><span className="text-[10px] font-bold">World</span></button>
+          <button onClick={() => { setActivityOpen(false); setPhoneOpen(false); setMapOpen(true); }} className="flex min-w-[68px] flex-col items-center gap-1 rounded-xl px-4 py-2 text-slate-600 hover:bg-slate-100"><Map size={18} /><span className="text-[10px] font-bold">Map</span></button>
           <button onClick={() => { setPhoneOpen(true); setActivityOpen(false); }} className="flex min-w-[68px] flex-col items-center gap-1 rounded-xl px-4 py-2 text-slate-600 hover:bg-slate-100"><Smartphone size={18} /><span className="text-[10px] font-bold">Phone</span></button>
           <button onClick={() => { setActivityOpen(true); setPhoneOpen(false); }} className="flex min-w-[68px] flex-col items-center gap-1 rounded-xl px-4 py-2 text-slate-600 hover:bg-slate-100"><Activity size={18} /><span className="text-[10px] font-bold">Activities</span></button>
         </nav>
