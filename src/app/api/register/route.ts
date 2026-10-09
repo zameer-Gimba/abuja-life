@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     if (!/^[a-z0-9_]{3,20}$/.test(username)) {
       return NextResponse.json({ error: "Username must be 3–20 characters using letters, numbers or underscores." }, { status: 400 });
     }
-    if (providedEmail && (!/^\\S+@\\S+\\.\\S+$/.test(providedEmail) || providedEmail.length > 254)) {
+    if (providedEmail && (!providedEmail.includes("@") || !providedEmail.includes(".") || providedEmail.includes(" ") || providedEmail.length > 254)) {
       return NextResponse.json({ error: "Enter a valid email address or leave it blank for now." }, { status: 400 });
     }
     // Email is optional at signup; a reserved .invalid address is used until the player adds a real one.
