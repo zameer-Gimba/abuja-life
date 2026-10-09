@@ -39,6 +39,34 @@ const ACTIVITIES = {
     changes: { connectLevel: 1, happiness: 1 },
     message: "A friendly greeting helped you build connections.",
   },
+  pray_salah: {
+    label: "Pray (Salah)",
+    reward: 0,
+    cost: 0,
+    changes: { happiness: 3 },
+    message: "You completed Salah at the mosque.",
+  },
+  perform_wudu: {
+    label: "Perform ablution (Wudu)",
+    reward: 0,
+    cost: 0,
+    changes: { happiness: 1 },
+    message: "You completed ablution at the mosque.",
+  },
+  read_quran: {
+    label: "Read the Quran",
+    reward: 0,
+    cost: 0,
+    changes: { happiness: 3 },
+    message: "You spent some time reading the Quran.",
+  },
+  give_sadaqah: {
+    label: "Give Sadaqah",
+    reward: 0,
+    cost: 100,
+    changes: { happiness: 2, connectLevel: 1 },
+    message: "You gave ₦100 in Sadaqah.",
+  },
 } as const;
 
 type ActivityKey = keyof typeof ACTIVITIES;
@@ -70,6 +98,7 @@ export async function POST(request: Request) {
         where: { id: playerId },
         select: {
           id: true,
+          currentArea: true,
           walletBalance: true,
           bankBalance: true,
           savingsBalance: true,
@@ -83,6 +112,9 @@ export async function POST(request: Request) {
         },
       });
       if (!player) throw new Error("PLAYER_NOT_FOUND");
+      if (["pray_salah", "perform_wudu", "read_quran", "give_sadaqah"].includes(key) && player.currentArea !== "Central Area") {
+        throw new Error("NOT_AT_MOSQUE");
+      }
 
       const previous = await tx.gameActivity.findFirst({
         where: { playerId, activityType: key },
@@ -181,6 +213,7 @@ export async function POST(request: Request) {
   } catch (error) {
     const code = error instanceof Error ? error.message : "UNKNOWN";
     if (code === "PLAYER_NOT_FOUND") return NextResponse.json({ error: "Player not found." }, { status: 404 });
+    if (code === "NOT_AT_MOSQUE") return NextResponse.json({ error: "Travel to Central Area to perform mosque activities." }, { status: 400 });
     if (code === "INSUFFICIENT_FUNDS") return NextResponse.json({ error: "You do not have enough Game Naira for that." }, { status: 400 });
     if (code === "DAILY_LIMIT") return NextResponse.json({ error: "You have reached today's limit for this activity. Try another activity." }, { status: 429 });
     if (code.startsWith("COOLDOWN:")) return NextResponse.json({ error: `Try again in ${code.split(":")[1]} seconds.` }, { status: 429 });
