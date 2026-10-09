@@ -100,6 +100,7 @@ export async function POST(request: Request) {
       });
       if (todayCount >= 12) throw new Error("DAILY_LIMIT");
 
+      const changes = config.changes as Partial<Record<"health" | "fitness" | "happiness" | "aura" | "connectLevel", number>>;
       const cost = BigInt(config.cost);
       if (player.walletBalance < cost) throw new Error("INSUFFICIENT_FUNDS");
 
@@ -113,11 +114,11 @@ export async function POST(request: Request) {
         data: {
           walletBalance: balanceAfter,
           totalNetWorth: netWorthAfter,
-          ...(config.changes.health !== undefined ? { health: clampStat(player.health + config.changes.health) } : {}),
-          ...(config.changes.fitness !== undefined ? { fitness: clampStat(player.fitness + config.changes.fitness) } : {}),
-          ...(config.changes.happiness !== undefined ? { happiness: clampStat(player.happiness + config.changes.happiness) } : {}),
-          ...(config.changes.aura !== undefined ? { aura: player.aura + config.changes.aura } : {}),
-          ...(config.changes.connectLevel !== undefined ? { connectLevel: player.connectLevel + config.changes.connectLevel } : {}),
+          ...(changes.health !== undefined ? { health: clampStat(player.health + changes.health) } : {}),
+          ...(changes.fitness !== undefined ? { fitness: clampStat(player.fitness + changes.fitness) } : {}),
+          ...(changes.happiness !== undefined ? { happiness: clampStat(player.happiness + changes.happiness) } : {}),
+          ...(changes.aura !== undefined ? { aura: player.aura + changes.aura } : {}),
+          ...(changes.connectLevel !== undefined ? { connectLevel: player.connectLevel + changes.connectLevel } : {}),
           lastSeen: now,
         },
         select: {
