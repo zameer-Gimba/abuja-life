@@ -619,7 +619,7 @@ export default function GameShell({ player }: { player: Player }) {
             <div className="rounded-3xl border border-slate-200 bg-white p-7">
               <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
                 <div><p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Abuja Jobs Board</p><h1 className="mt-2 text-3xl font-black">Find your hustle.</h1><p className="mt-2 text-sm text-slate-500">Jobs use your skills, workplace, vehicle status and the in-game clock.</p><p className="mt-2 text-xs font-bold text-slate-600">Day {gameClock.dayNumber} · {gameClock.time} · {gameClock.period}</p></div>
-                <button onClick={loadJobs} disabled={jobLoading} className="rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white">{jobLoading ? "Loading..." : "Refresh jobs"}</button>
+                <button onClick={() => void loadJobs()} disabled={jobLoading} className="rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white">{jobLoading ? "Loading..." : "Refresh jobs"}</button>
               </div>
               <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <div className="rounded-2xl bg-slate-950 p-4 text-white"><p className="text-[10px] font-bold uppercase tracking-wider text-blue-300">Shifts completed</p><p className="mt-1 text-2xl font-black">{shiftsCompleted}</p></div>
