@@ -175,6 +175,7 @@ export default function GameShell({ player }: { player: Player }) {
   const cash = useMemo(() => Number(balance).toLocaleString(), [balance]);
   const displayedNetWorth = useMemo(() => Number(netWorth).toLocaleString(), [netWorth]);
   const currentJob = player.currentJob;
+  const activeJobDetails = jobs.find((job) => job.title === activeJob);
 
   async function refreshGameClock() {
     await gameClock.refresh();
@@ -683,8 +684,9 @@ export default function GameShell({ player }: { player: Player }) {
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-300">Current Job</p>
               <h2 className="mt-2 text-2xl font-black">{activeJob}</h2>
               <p className="mt-2 text-sm text-slate-400">Complete a shift to earn Game Naira and build your employment history.</p>
+              {activeJobDetails?.payPerShift === 0 && <p className="mt-3 rounded-xl bg-white/10 px-4 py-3 text-sm font-semibold text-slate-300">This commission-based role is listed, but commission payouts are not available yet.</p>}
               {JOB_WORKPLACE_AREAS[activeJob] && <p className="mt-3 rounded-xl bg-white/10 px-4 py-3 text-sm font-semibold text-slate-200">Workplace: {JOB_WORKPLACE_AREAS[activeJob]}{currentArea === JOB_WORKPLACE_AREAS[activeJob] ? " · You are here" : " · You are currently in " + currentArea}</p>}
-              <button onClick={completeShift} disabled={jobLoading} className="mt-5 rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white">{jobLoading ? "Processing..." : "Complete Shift"}</button>
+              <button onClick={completeShift} disabled={jobLoading || activeJobDetails?.payPerShift === 0} className="mt-5 rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-50">{jobLoading ? "Processing..." : activeJobDetails?.payPerShift === 0 ? "Payout coming soon" : "Complete Shift"}</button>
             </div>}
           </div>}
           {view === "vehicles" && <VehiclePanel onUpdate={(data) => { setBalance(BigInt(data.walletBalance)); setNetWorth(BigInt(data.totalNetWorth)); setNotice(data.message); if (data.vehicle) { setHasVehicle(true); if (typeof data.vehicle.fuel === "number") setVehicleFuel(data.vehicle.fuel); } if (typeof data.vehicleFuel === "number") setVehicleFuel(data.vehicleFuel); }} />}
