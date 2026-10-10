@@ -410,6 +410,31 @@ function StreetBuilding({ x, z, height, width, color, label }: { x: number; z: n
   );
 }
 
+function StreetLamp({ x, z }: { x: number; z: number }) {
+  return (
+    <group position={[x, 0, z]}>
+      <mesh position={[0, 1.65, 0]} castShadow><cylinderGeometry args={[0.055, 0.075, 3.3, 8]} /><meshStandardMaterial color="#4a5155" metalness={0.55} roughness={0.48} /></mesh>
+      <mesh position={[0.28, 3.18, 0]} rotation={[0, 0, -0.18]}><boxGeometry args={[0.62, 0.055, 0.06]} /><meshStandardMaterial color="#4a5155" metalness={0.45} /></mesh>
+      <mesh position={[0.55, 3.08, 0]}><boxGeometry args={[0.24, 0.13, 0.19]} /><meshStandardMaterial color="#fff0c3" emissive="#ffd780" emissiveIntensity={0.38} roughness={0.3} /></mesh>
+      <mesh position={[0, 0.12, 0]}><cylinderGeometry args={[0.2, 0.22, 0.24, 10]} /><meshStandardMaterial color="#777a77" roughness={0.95} /></mesh>
+    </group>
+  );
+}
+
+function StreetTree({ x, z, variant = 0 }: { x: number; z: number; variant?: number }) {
+  const greens = ["#397d4c", "#4b8950", "#2e7047"];
+  return (
+    <group position={[x, 0, z]}>
+      <mesh position={[0, 0.9, 0]} castShadow><cylinderGeometry args={[0.13, 0.2, 1.8, 7]} /><meshStandardMaterial color="#795237" roughness={1} /></mesh>
+      <mesh position={[0, 1.95, 0]} castShadow><sphereGeometry args={[0.82, 9, 7]} /><meshStandardMaterial color={greens[variant % greens.length]} roughness={1} /></mesh>
+      <mesh position={[-0.38, 1.78, 0.12]} castShadow><sphereGeometry args={[0.48, 8, 6]} /><meshStandardMaterial color={greens[(variant + 1) % greens.length]} roughness={1} /></mesh>
+      <mesh position={[0.4, 1.72, -0.12]} castShadow><sphereGeometry args={[0.52, 8, 6]} /><meshStandardMaterial color={greens[(variant + 2) % greens.length]} roughness={1} /></mesh>
+      <mesh position={[0, 0.13, 0]}><cylinderGeometry args={[0.48, 0.52, 0.22, 10]} /><meshStandardMaterial color="#9b998a" roughness={1} /></mesh>
+      <mesh position={[0, 0.25, 0]}><cylinderGeometry args={[0.36, 0.38, 0.06, 10]} /><meshStandardMaterial color="#4c7550" roughness={1} /></mesh>
+    </group>
+  );
+}
+
 function StreetScene({ look, area, onPosition, moveTarget }: { look: CharacterLook; area: string; onPosition: (x: number, z: number) => void; moveTarget: { x: number; z: number } | null }) {
   const isQuiet = ["Maitama", "Asokoro", "Guzape"].includes(area);
   const isCentral = area === "Central Area";
@@ -498,15 +523,25 @@ function StreetScene({ look, area, onPosition, moveTarget }: { look: CharacterLo
   return (
     <>
       <color attach="background" args={["#a9d4ee"]} />
-      <ambientLight intensity={1.2} />
-      <hemisphereLight args={["#d7edff", "#9c9072", 1.1]} />
-      <directionalLight position={[8, 14, 6]} intensity={2.1} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
+      <fog attach="fog" args={["#c9dfeb", 24, 48]} />
+      <ambientLight intensity={1.05} />
+      <hemisphereLight args={["#e8f5ff", "#786b53", 1.25]} />
+      <directionalLight position={[-7, 16, 8]} intensity={2.35} castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]} receiveShadow><planeGeometry args={[42, 30]} /><meshStandardMaterial color="#c5bca9" roughness={1} /></mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow><planeGeometry args={[36, 8.4]} /><meshStandardMaterial color="#50565b" roughness={0.95} /></mesh>
       <mesh position={[0, 0.09, -4.9]} receiveShadow><boxGeometry args={[36, 0.18, 1.7]} /><meshStandardMaterial color="#b9b3a4" roughness={1} /></mesh>
       <mesh position={[0, 0.09, 4.9]} receiveShadow><boxGeometry args={[36, 0.18, 1.7]} /><meshStandardMaterial color="#b9b3a4" roughness={1} /></mesh>
       {Array.from({ length: 16 }, (_, i) => <mesh key={i} position={[-16 + i * 2.1, 0.055, 0]}><boxGeometry args={[0.95, 0.035, 0.1]} /><meshStandardMaterial color="#eee9d9" /></mesh>)}
       {buildings.map((building, index) => <StreetBuilding key={`${building.label}-${index}`} {...building} />)}
+      {/* Abuja streetscape dressing: planted verges, shaded trees and repeatable street lighting. */}
+      {[-13, -7, 0, 7, 13].map((x, i) => <StreetTree key={`tree-n-${x}`} x={x} z={-6.35} variant={i} />)}
+      {[-11, -3, 5, 12].map((x, i) => <StreetTree key={`tree-s-${x}`} x={x} z={6.35} variant={i + 1} />)}
+      {[-12, -4, 4, 12].map((x) => <StreetLamp key={`lamp-n-${x}`} x={x} z={-5.15} />)}
+      {[-8, 0, 8].map((x) => <StreetLamp key={`lamp-s-${x}`} x={x} z={5.15} />)}
+      {/* Raised zebra crossing near the player spawn, with clearly marked road edges. */}
+      {Array.from({ length: 7 }, (_, i) => <mesh key={`crossing-${i}`} position={[-1.8 + i * 0.6, 0.025, -2.15]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[0.32, 1.15]} /><meshStandardMaterial color="#f0eee5" roughness={0.9} /></mesh>)}
+      <mesh position={[0, 0.045, -3.95]}><boxGeometry args={[36, 0.055, 0.07]} /><meshStandardMaterial color="#d9c9a3" /></mesh>
+      <mesh position={[0, 0.045, 3.95]}><boxGeometry args={[36, 0.055, 0.07]} /><meshStandardMaterial color="#d9c9a3" /></mesh>
       <group position={[-16, 0, -5.5]}>
         <mesh position={[0, 1.3, 0]}><cylinderGeometry args={[0.075, 0.09, 2.6, 8]} /><meshStandardMaterial color="#484d52" /></mesh>
         <mesh position={[0.3, 2.55, 0]} rotation={[0, 0, -0.2]}><boxGeometry args={[0.65, 0.08, 0.08]} /><meshStandardMaterial color="#484d52" /></mesh>
