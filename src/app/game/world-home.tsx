@@ -431,6 +431,14 @@ function StreetBuilding({ x, z, height, width, color, label }: { x: number; z: n
         const wx = (index - (cols - 1) / 2) * (width - 0.6) / cols;
         return <mesh key={floor + ":" + index} position={[wx, 0.72 + floor * 1.28, front]}><boxGeometry args={[0.42, 0.48, 0.045]} /><meshStandardMaterial color={floor === 0 ? "#93b6bd" : "#a9c5ca"} emissive="#355e66" emissiveIntensity={0.12} roughness={0.35} /></mesh>;
       }))}
+      {/* Deep-set glazing, entrance, signboard and roofline give each block a readable facade. */}
+      {[-1, 1].map((side) => <mesh key={`door-frame-${side}`} position={[side * Math.min(width * 0.28, 1.05), 0.78, front - Math.sign(z) * 0.055]}><boxGeometry args={[0.78, 1.52, 0.12]} /><meshStandardMaterial color="#5b4738" roughness={0.86} /></mesh>)}
+      {[-1, 1].map((side) => <mesh key={`door-glass-${side}`} position={[side * Math.min(width * 0.28, 1.05), 0.82, front - Math.sign(z) * 0.125]}><boxGeometry args={[0.54, 1.13, 0.025]} /><meshStandardMaterial color="#80a9b0" metalness={0.12} roughness={0.28} /></mesh>)}
+      {height < 8 && <group>
+        <mesh position={[0, 1.72, front - Math.sign(z) * 0.16]} castShadow><boxGeometry args={[Math.min(width - 0.25, 3.8), 0.13, 0.55]} /><meshStandardMaterial color={label.includes("MAMA") || label.includes("SUYA") ? "#bd653c" : "#2b755d"} roughness={0.8} /></mesh>
+        {[-1, 1].map((side) => <mesh key={`awning-post-${side}`} position={[side * Math.min((width - 0.35) / 2, 1.8), 0.93, front - Math.sign(z) * 0.32]}><cylinderGeometry args={[0.035, 0.035, 1.7, 6]} /><meshStandardMaterial color="#514d42" /></mesh>)}
+      </group>}
+      {height >= 8 && <mesh position={[0, height - 0.12, 0]}><boxGeometry args={[width + 0.12, 0.24, 4.12]} /><meshStandardMaterial color="#8e9a9c" roughness={0.88} /></mesh>}
       <mesh position={[0, 1.12, front - Math.sign(z) * 0.04]}><boxGeometry args={[Math.min(width - 0.5, 2.8), 0.48, 0.12]} /><meshStandardMaterial color="#185e52" roughness={0.75} /></mesh>
       <Text position={[0, 1.12, front - Math.sign(z) * 0.11]} rotation={[0, z > 0 ? Math.PI : 0, 0]} fontSize={0.17} color="#f5efdc" anchorX="center" anchorY="middle">{label}</Text>
     </group>
@@ -558,6 +566,10 @@ function StreetScene({ look, area, onPosition, moveTarget }: { look: CharacterLo
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow><planeGeometry args={[36, 8.4]} /><meshStandardMaterial color="#50565b" roughness={0.95} /></mesh>
       <mesh position={[0, 0.09, -4.9]} receiveShadow><boxGeometry args={[36, 0.18, 1.7]} /><meshStandardMaterial color="#b9b3a4" roughness={1} /></mesh>
       <mesh position={[0, 0.09, 4.9]} receiveShadow><boxGeometry args={[36, 0.18, 1.7]} /><meshStandardMaterial color="#b9b3a4" roughness={1} /></mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.19, -5.0]}><planeGeometry args={[36, 1.52]} /><meshStandardMaterial color="#d7d0bf" roughness={1} /></mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.19, 5.0]}><planeGeometry args={[36, 1.52]} /><meshStandardMaterial color="#d7d0bf" roughness={1} /></mesh>
+      {Array.from({ length: 28 }, (_, i) => <mesh key={`paver-n-${i}`} position={[-17 + i * 1.25, 0.205, -5.0]}><boxGeometry args={[0.025, 0.012, 1.45]} /><meshStandardMaterial color="#b8b19f" roughness={1} /></mesh>)}
+      {Array.from({ length: 28 }, (_, i) => <mesh key={`paver-s-${i}`} position={[-17 + i * 1.25, 0.205, 5.0]}><boxGeometry args={[0.025, 0.012, 1.45]} /><meshStandardMaterial color="#b8b19f" roughness={1} /></mesh>)}
       {Array.from({ length: 16 }, (_, i) => <mesh key={i} position={[-16 + i * 2.1, 0.055, 0]}><boxGeometry args={[0.95, 0.035, 0.1]} /><meshStandardMaterial color="#eee9d9" /></mesh>)}
       {buildings.map((building, index) => <StreetBuilding key={`${building.label}-${index}`} {...building} />)}
       {/* Abuja streetscape dressing: planted verges, shaded trees and repeatable street lighting. */}
