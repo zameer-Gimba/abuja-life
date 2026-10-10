@@ -31,6 +31,7 @@ export async function POST() {
           hustle: true,
           intelligence: true,
           connectLevel: true,
+          hasVehicle: true,
           performanceScore: true,
           shiftsCompleted: true,
         },
@@ -41,6 +42,11 @@ export async function POST() {
 
       const job = JOBS.find((item) => item.title === player.currentJob);
       if (!job) throw new Error("JOB_NOT_FOUND");
+      // Eligibility can change after applying (for example, a vehicle can be sold).
+      if (player.hustle < (job.minHustle ?? 0)) throw new Error("HUSTLE_TOO_LOW");
+      if (player.intelligence < (job.minIntelligence ?? 0)) throw new Error("INTELLIGENCE_TOO_LOW");
+      if (player.connectLevel < (job.minConnect ?? 0)) throw new Error("CONNECTION_TOO_LOW");
+      if (job.requiresVehicle && !player.hasVehicle) throw new Error("VEHICLE_REQUIRED");
 
       const requiredArea = JOB_WORKPLACE_AREAS[job.title];
       if (requiredArea && player.currentArea !== requiredArea) {
@@ -156,6 +162,10 @@ export async function POST() {
     if (code === "NO_JOB") return NextResponse.json({ error: "Choose a job first." }, { status: 400 });
     if (code === "JOB_NOT_FOUND") return NextResponse.json({ error: "Your current job is no longer available." }, { status: 400 });
     if (code === "COMMISSION_JOB") return NextResponse.json({ error: "This is a commission-based role. Its payout system comes in the next jobs expansion." }, { status: 400 });
+    if (code === "HUSTLE_TOO_LOW") return NextResponse.json({ error: "Your Hustle no longer meets this job's requirements." }, { status: 400 });
+    if (code === "INTELLIGENCE_TOO_LOW") return NextResponse.json({ error: "Your Intelligence no longer meets this job's requirements." }, { status: 400 });
+    if (code === "CONNECTION_TOO_LOW") return NextResponse.json({ error: "Your Connection no longer meets this job's requirements." }, { status: 400 });
+    if (code === "VEHICLE_REQUIRED") return NextResponse.json({ error: "This job requires a vehicle. Buy or restore your vehicle before completing another shift." }, { status: 400 });
     if (code.startsWith("WORKPLACE_AREA:")) {
       const area = code.slice("WORKPLACE_AREA:".length);
       return NextResponse.json({ error: `Travel to ${area} before starting this shift.`, requiredArea: area }, { status: 400 });
