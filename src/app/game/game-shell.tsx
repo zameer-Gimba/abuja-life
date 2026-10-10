@@ -714,14 +714,14 @@ export default function GameShell({ player }: { player: Player }) {
                       <div>
                         <p className="font-black">{job.title}</p>
                         <p className="mt-1 text-xs font-semibold text-slate-500">
-                          {job.location}{job.venue && job.venue !== job.location ? " · " + job.venue : ""} · {job.shiftHours}h shift{job.opensAt !== undefined
+                          {job.location}{job.venue && job.venue !== job.location ? " · " + job.venue : ""} · {job.payPerShift <= 0 ? "Commission-based role" : `${job.shiftHours}h shift`}{job.opensAt !== undefined
                             ? " · " + (job.opensAt >= 19 || (job.closesAt !== undefined && job.closesAt < job.opensAt) ? "Night hours" : "Hours") + " " + formatHour(job.opensAt) + "–" + formatHour(closingHour ?? job.opensAt)
                             : " · Flexible hours"}
                         </p>
                       </div>
                       <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase text-slate-700">{job.category}</span>
                     </div>
-                  <p className="mt-4 text-xl font-black">₦{job.payPerShift.toLocaleString()} <span className="text-xs font-semibold text-slate-400">/ shift</span></p>
+                  <p className="mt-4 text-xl font-black">{job.payPerShift <= 0 ? "Commission-based" : <>₦{job.payPerShift.toLocaleString()} <span className="text-xs font-semibold text-slate-400">/ shift</span></>}</p>
                   <p className="mt-2 text-xs text-slate-500">Requirements: Hustle {job.minHustle ?? 0} · Intelligence {job.minIntelligence ?? 0} · Connection {job.minConnect ?? 0}{job.requiresVehicle ? " · Vehicle" : ""}</p>
                   {job.careerRecord && <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">Your record: {job.careerRecord.shiftsWorked} shift{job.careerRecord.shiftsWorked === 1 ? "" : "s"} · ₦{Number(job.careerRecord.totalEarned).toLocaleString()} earned · +{job.careerRecord.performance} performance</p>}
                   <p className={"mt-3 rounded-lg px-3 py-2 text-xs font-bold " + statusStyle} aria-live="polite">{shiftStatus}</p>
