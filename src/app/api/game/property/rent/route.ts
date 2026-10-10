@@ -63,6 +63,9 @@ export async function POST(request: Request) {
           homeArea: property.area,
           currentArea: property.area,
           housingType: property.type,
+          homeSceneId: property.type === "mansion" || property.type === "duplex"
+            ? "guzape_mansion_v1"
+            : "nyanya_shared_room_v1",
           walletBalance: balanceAfter,
           totalNetWorth: netWorthAfter,
           lastSeen: now,
@@ -72,6 +75,7 @@ export async function POST(request: Request) {
           totalNetWorth: true,
           homeArea: true,
           housingType: true,
+          homeSceneId: true,
           currentArea: true,
         },
       });
