@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import GameShell from "./game-shell";
 
+export const instant = false;
+
 export default async function GamePage() {
   const session = await getServerSession(authOptions);
 
@@ -16,6 +18,19 @@ export default async function GamePage() {
     select: {
       id: true,
       username: true,
+      gender: true,
+      characterPresetId: true,
+      skinTone: true,
+      hairstyle: true,
+      hairColor: true,
+      bodyType: true,
+      heightCm: true,
+      appearanceSeed: true,
+      outfitTop: true,
+      outfitBottom: true,
+      outfitShoes: true,
+      outfitOuterwear: true,
+      homeSceneId: true,
       displayName: true,
       background: true,
       backgroundLabel: true,
@@ -28,6 +43,7 @@ export default async function GamePage() {
       streetSense: true,
       connectLevel: true,
       health: true,
+      fitness: true,
       happiness: true,
       walletBalance: true,
       bankBalance: true,

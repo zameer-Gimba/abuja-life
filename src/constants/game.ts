@@ -58,29 +58,40 @@ export const HOUSING_TYPES = {
 }
 
 // ── Transport ──────────────────────────────────────────────
-export const TRAVEL_AREAS = ["Nyanya", "Kubwa", "Gwarinpa", "Jabi", "Wuse 2", "Central Area", "Guzape", "Maitama"] as const
+export const TRAVEL_AREAS = [
+  "Nyanya", "Mararaba", "Lugbe", "Mpape", "Kubwa", "Gwarinpa",
+  "Garki", "Wuye", "Jabi", "Wuse 2", "Central Area", "Guzape", "Asokoro", "Maitama",
+] as const
 
 export const TRAVEL_AREA_DISTANCE: Record<string, number> = {
   Nyanya: 1,
+  Mararaba: 1,
+  Lugbe: 2,
+  Mpape: 2,
   Kubwa: 2,
   Gwarinpa: 2,
+  Garki: 3,
+  Wuye: 3,
   Jabi: 3,
   "Wuse 2": 3,
   "Central Area": 4,
   Guzape: 4,
+  Asokoro: 4,
   Maitama: 5,
 }
 
-export const TRAVEL_MODES = ["BUS_STOP", "ALONE", "KEKE", "BOLT", "INDRIVE", "METRO"] as const
+export const TRAVEL_MODES = ["TREK", "BUS_STOP", "ALONE", "KEKE", "BOLT", "INDRIVE", "METRO", "PERSONAL_CAR"] as const
 export type TravelMode = (typeof TRAVEL_MODES)[number]
 
 export const TRANSPORT_TYPES = {
+  TREK: { label: "Trek", description: "Walk across town; builds fitness and earns a small activity reward", baseCost: 0 },
   BUS_STOP: { label: "Bus Stop", description: "Share a commercial car with strangers", baseCost: 150 },
   ALONE: { label: "Alone", description: "Charter the whole car solo — premium", baseCost: 800 },
   KEKE: { label: "Keke NAPEP", description: "Tricycle taxi — common in outskirts", baseCost: 100 },
   BOLT: { label: "Bolt", description: "Ride-hailing app — comfortable", baseCost: 1200 },
   INDRIVE: { label: "inDrive", description: "Ride-hailing with negotiated fares", baseCost: 1100 },
   METRO: { label: "Abuja Metro", description: "Light rail — cheap and modern", baseCost: 200 },
+  PERSONAL_CAR: { label: "Personal Car", description: "Drive your own vehicle; consumes fuel", baseCost: 0 },
   ONE_CHANCE: { label: "One Chance ⚠️", description: "Looks like a bus stop... but it's not.", baseCost: 0 },
 }
 

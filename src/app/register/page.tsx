@@ -10,6 +10,7 @@ const backgrounds = [
 
 export default function RegisterPage() {
   const [background, setBackground] = useState("poor");
+  const [gender, setGender] = useState("male");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -26,6 +27,7 @@ export default function RegisterPage() {
         email: form.get("email"),
         password: form.get("password"),
         background,
+        gender,
       }),
     });
     const result = await response.json();
@@ -56,7 +58,7 @@ export default function RegisterPage() {
           <p className="mt-5 leading-7 text-slate-300">Create your account, choose your birth roll and enter a city where your decisions shape your level.</p>
           <div className="mt-8 space-y-4">
             <div className="flex gap-3"><UserRound className="mt-0.5 text-blue-300" size={19} /><div><p className="font-semibold">One identity</p><p className="text-sm text-slate-400">Your username becomes part of your Abuja identity.</p></div></div>
-            <div className="flex gap-3"><LockKeyhole className="mt-0.5 text-blue-300" size={19} /><div><p className="font-semibold">Secure account</p><p className="text-sm text-slate-400">Authentication and account security come before the economy.</p></div></div>
+            <div className="flex gap-3"><LockKeyhole className="mt-0.5 text-blue-300" size={19} /><div><p className="font-semibold">Secure account</p><p className="text-sm text-slate-400">Username and password first; email is optional.</p></div></div>
             <div className="flex gap-3"><ShieldCheck className="mt-0.5 text-blue-300" size={19} /><div><p className="font-semibold">Fixed birth roll</p><p className="text-sm text-slate-400">Choose carefully. Your starting background is part of your story.</p></div></div>
           </div>
         </aside>
@@ -67,10 +69,26 @@ export default function RegisterPage() {
           <form onSubmit={submit} className="mt-8 space-y-6">
             <div className="grid gap-5 sm:grid-cols-2">
               <label className="block"><span className="text-sm font-bold text-slate-700">Username</span><input name="username" placeholder="e.g. AbujaBoy" className="mt-2 h-12 w-full rounded-xl border border-slate-200 px-4 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" /></label>
-              <label className="block"><span className="text-sm font-bold text-slate-700">Email</span><input type="email" name="email" placeholder="you@example.com" className="mt-2 h-12 w-full rounded-xl border border-slate-200 px-4 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" /></label>
+              <label className="block"><span className="text-sm font-bold text-slate-700">Email <span className="font-normal text-slate-400">(optional)</span></span><input type="email" name="email" placeholder="Add later if you prefer" className="mt-2 h-12 w-full rounded-xl border border-slate-200 px-4 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" /><span className="mt-1 block text-xs text-slate-500">Create your account with a username and password. No email verification is required; add a real email later for account recovery when that feature is available.</span></label>
             </div>
 
             <label className="block"><span className="text-sm font-bold text-slate-700">Password</span><input type="password" name="password" placeholder="Create a strong password" className="mt-2 h-12 w-full rounded-xl border border-slate-200 px-4 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" /></label>
+
+            <fieldset>
+              <legend className="text-sm font-bold text-slate-700">Character</legend>
+              <p className="mt-1 text-sm text-slate-500">Choose the character you want to play. Your character’s gender and appearance stay consistent in the world.</p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                {[
+                  { id: "male", name: "Male character", detail: "A Nigerian male character preset." },
+                  { id: "female", name: "Female character", detail: "A Nigerian female character preset." },
+                ].map((item) => (
+                  <button type="button" key={item.id} onClick={() => setGender(item.id)} className={`rounded-2xl border p-4 text-left transition ${gender === item.id ? "border-blue-300 bg-blue-50 ring-2 ring-blue-500/30" : "border-slate-200 bg-white hover:border-blue-200"}`}>
+                    <div className="flex items-center justify-between"><span className="font-black text-slate-950">{item.name}</span><span className={`h-4 w-4 rounded-full border-2 ${gender === item.id ? "border-blue-600 bg-blue-600" : "border-slate-300"}`} /></div>
+                    <p className="mt-2 text-sm leading-6 text-slate-500">{item.detail}</p>
+                  </button>
+                ))}
+              </div>
+            </fieldset>
 
             <fieldset>
               <legend className="text-sm font-bold text-slate-700">Birth roll</legend>

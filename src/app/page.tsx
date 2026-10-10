@@ -12,14 +12,14 @@ const transport = [
   ["Metro", "Use the Abuja light rail.", Zap],
   ["Bolt / Uber", "Comfortable ride-hailing.", Compass],
   ["One Chance", "A danger event to avoid.", ShieldCheck],
-];
+] as const;
 
 const world = [
   ["Landmarks", "Aso Rock, National Assembly, National Mosque, City Gate and more.", Landmark],
   ["Daily Places", "Markets, malls, hotels, restaurants, cinemas and recreation.", Building2],
   ["Essentials", "Fuel stations, hospitals, schools, banks and power infrastructure.", Fuel],
   ["Transport Hubs", "Berger, bus stops, stations, bridges and major junctions.", Map],
-];
+] as const;
 
 export default function Home() {
   return (
