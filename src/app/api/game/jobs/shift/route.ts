@@ -143,7 +143,10 @@ export async function POST() {
     if (code === "CONNECTION_TOO_LOW") return NextResponse.json({ error: "Your Connection no longer meets this job's requirements." }, { status: 400 });
     if (code === "VEHICLE_REQUIRED") return NextResponse.json({ error: "This job requires an available vehicle. Buy a vehicle before completing another shift." }, { status: 400 });
     if (code.startsWith("WORKPLACE_")) {
-      const area = code.slice("WORKPLACE_".length).replace(/_/g, " ");
+      const areaCode = code.slice("WORKPLACE_".length);
+      const area = Object.values(JOB_WORK_AREAS).find(
+        (candidate) => candidate.toUpperCase().replace(/\s+/g, "_") === areaCode,
+      ) ?? areaCode.replace(/_/g, " ");
       return NextResponse.json({ error: "Travel to " + area + " before starting this shift.", requiredArea: area }, { status: 400 });
     }
     return NextResponse.json({ error: "Could not complete the shift." }, { status: 500 });
