@@ -82,6 +82,8 @@ export async function advanceGameClock(
         dayNumber: next.dayNumber,
         reason,
       },
+      // Ensure a new anchor sorts after the initial anchor even within one transaction.
+      createdAt: new Date(now.getTime() + 1),
     },
   });
   return next;
