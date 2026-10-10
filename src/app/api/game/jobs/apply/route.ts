@@ -14,6 +14,12 @@ export async function POST(request: Request) {
   const job = JOBS.find((item) => item.title === title);
 
   if (!job) return NextResponse.json({ error: "Job not found." }, { status: 404 });
+  if (job.commissionBased || (job.payPerShift ?? 0) <= 0) {
+    return NextResponse.json({ error: "Commission-based roles are coming in a future jobs update. Choose a salaried role for now." }, { status: 400 });
+  }
+  if ((job.payPerShift ?? 0) <= 0) {
+    return NextResponse.json({ error: "Commission-based payouts are not available yet. Choose another paid job for now." }, { status: 400 });
+  }
 
   const player = await db.player.findUnique({
     where: { id: playerId },

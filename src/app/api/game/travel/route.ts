@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { calculateTravelCost, TRAVEL_AREAS, TRAVEL_AREA_DISTANCE, TRAVEL_MODES, type TravelMode } from "@/constants/game";
+import { advanceGameClock, getGameClock } from "@/lib/game-clock";
 
 const DURATIONS: Record<TravelMode, number> = {
   TREK: 25,
@@ -39,6 +40,7 @@ export async function POST(request: Request) {
 
   try {
     const result = await db.$transaction(async (tx) => {
+      await tx.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "players" WHERE "id" = ${playerId} FOR UPDATE`;
       const player = await tx.player.findUnique({
         where: { id: playerId },
         select: {
@@ -48,6 +50,7 @@ export async function POST(request: Request) {
           bankBalance: true,
           savingsBalance: true,
           bondsBalance: true,
+          totalNetWorth: true,
           hasVehicle: true,
           vehicleFuel: true,
           vehicleCondition: true,
@@ -61,10 +64,11 @@ export async function POST(request: Request) {
       if (player.currentArea === destination) throw new Error("ALREADY_THERE");
 
       if (mode === "PERSONAL_CAR" && !player.hasVehicle) throw new Error("NO_PERSONAL_CAR");
+      let trekGameDayNumber: number | undefined;
       if (mode === "TREK") {
         const now = new Date();
-        const dayStart = new Date(now);
-        dayStart.setHours(0, 0, 0, 0);
+        const gameClock = await getGameClock(tx, player.id, now);
+        trekGameDayNumber = gameClock.dayNumber;
         const lastTrek = await tx.gameActivity.findFirst({
           where: { playerId, activityType: "trek" },
           orderBy: { createdAt: "desc" },
@@ -73,9 +77,14 @@ export async function POST(request: Request) {
         if (lastTrek && now.getTime() - lastTrek.createdAt.getTime() < 20_000) {
           throw new Error("TREK_COOLDOWN");
         }
-        const dailyTreks = await tx.gameActivity.count({
-          where: { playerId, activityType: "trek", createdAt: { gte: dayStart } },
-        });
+        const dailyTrekRows = await tx.$queryRaw<Array<{ count: bigint }>>`
+          SELECT COUNT(*)::bigint AS count
+          FROM "game_activities"
+          WHERE "playerId" = ${player.id}
+            AND "activityType" = 'trek'
+            AND ("statChanges"->>'gameDayNumber') = ${String(gameClock.dayNumber)}
+        `;
+        const dailyTreks = Number(dailyTrekRows[0]?.count ?? 0n);
         if (dailyTreks >= 12) throw new Error("TREK_DAILY_LIMIT");
       }
 
@@ -89,7 +98,7 @@ export async function POST(request: Request) {
       if (fuelUsed > player.vehicleFuel) throw new Error("INSUFFICIENT_FUEL");
 
       const balanceAfter = player.walletBalance - costBigInt + BigInt(reward);
-      const netWorthAfter = balanceAfter + player.bankBalance + player.savingsBalance + player.bondsBalance;
+      const netWorthAfter = player.totalNetWorth - costBigInt + BigInt(reward);
       const fitnessAfter = mode === "TREK" ? clampStat(player.fitness + 2) : player.fitness;
       const happinessAfter = mode === "TREK" ? clampStat(player.happiness + 1) : player.happiness;
       const drivingSkillAfter = mode === "PERSONAL_CAR" ? Math.min(100, player.drivingSkill + 1) : player.drivingSkill;
@@ -130,7 +139,7 @@ export async function POST(request: Request) {
             amount: BigInt(reward),
             description: `Fitness reward for trekking from ${player.currentArea} to ${destination}.`,
             category: "daily_activity",
-            balanceBefore: player.walletBalance,
+            balanceBefore: player.walletBalance - costBigInt,
             balanceAfter,
           },
         });
@@ -139,7 +148,7 @@ export async function POST(request: Request) {
             playerId: player.id,
             activityType: "trek",
             reward,
-            statChanges: { fitness: 2, happiness: 1, reward },
+            statChanges: { fitness: 2, happiness: 1, reward, gameDayNumber: trekGameDayNumber ?? 1 },
           },
         });
         await tx.notification.create({
@@ -154,7 +163,7 @@ export async function POST(request: Request) {
       }
 
       const statChanges = mode === "TREK"
-        ? { fitness: 2, happiness: 1, reward }
+        ? { fitness: 2, happiness: 1, reward, gameDayNumber: trekGameDayNumber ?? 1 }
         : mode === "PERSONAL_CAR"
           ? { fuelUsed, drivingSkill: 1, vehicleCondition: -1 }
           : {};
@@ -170,6 +179,7 @@ export async function POST(request: Request) {
           statChanges,
         },
       });
+      await advanceGameClock(tx, player.id, DURATIONS[mode as TravelMode], "travel");
 
       return {
         currentArea: destination,

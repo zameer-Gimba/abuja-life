@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { advanceGameClock, getGameClock } from "@/lib/game-clock";
 
 const ACTIVITIES = {
   walk: {
@@ -71,6 +72,18 @@ const ACTIVITIES = {
 
 type ActivityKey = keyof typeof ACTIVITIES;
 
+const ACTIVITY_GAME_MINUTES: Record<ActivityKey, number> = {
+  walk: 20,
+  dance: 15,
+  eat: 20,
+  call_mummy: 10,
+  greet_neighbour: 5,
+  pray_salah: 10,
+  perform_wudu: 5,
+  read_quran: 30,
+  give_sadaqah: 2,
+};
+
 function clampStat(value: number) {
   return Math.max(0, Math.min(100, value));
 }
@@ -83,6 +96,7 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const activity = typeof body?.activity === "string" ? body.activity : "";
   const targetName = typeof body?.targetName === "string" ? body.targetName.trim().slice(0, 60) : "";
+  const targetId = typeof body?.targetId === "string" ? body.targetId.trim().slice(0, 120) : "";
   if (!Object.prototype.hasOwnProperty.call(ACTIVITIES, activity)) {
     return NextResponse.json({ error: "That activity is not available." }, { status: 400 });
   }
@@ -90,11 +104,10 @@ export async function POST(request: Request) {
   const key = activity as ActivityKey;
   const config = ACTIVITIES[key];
   const now = new Date();
-  const dayStart = new Date(now);
-  dayStart.setHours(0, 0, 0, 0);
 
   try {
     const result = await db.$transaction(async (tx) => {
+      await tx.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "players" WHERE "id" = ${playerId} FOR UPDATE`;
       const player = await tx.player.findUnique({
         where: { id: playerId },
         select: {
@@ -118,6 +131,8 @@ export async function POST(request: Request) {
         throw new Error("NOT_AT_MOSQUE");
       }
 
+      const gameClock = await getGameClock(tx, playerId, now);
+
       const previous = await tx.gameActivity.findFirst({
         where: { playerId, activityType: key },
         orderBy: { createdAt: "desc" },
@@ -129,9 +144,14 @@ export async function POST(request: Request) {
         if (elapsed < cooldownMs) throw new Error(`COOLDOWN:${Math.ceil((cooldownMs - elapsed) / 1000)}`);
       }
 
-      const todayCount = await tx.gameActivity.count({
-        where: { playerId, activityType: key, createdAt: { gte: dayStart } },
-      });
+      const dailyActivityRows = await tx.$queryRaw<Array<{ count: bigint }>>`
+        SELECT COUNT(*)::bigint AS count
+        FROM "game_activities"
+        WHERE "playerId" = ${playerId}
+          AND "activityType" = ${key}
+          AND ("statChanges"->>'gameDayNumber') = ${String(gameClock.dayNumber)}
+      `;
+      const todayCount = Number(dailyActivityRows[0]?.count ?? 0n);
       if (todayCount >= 12) throw new Error("DAILY_LIMIT");
 
       const changes = config.changes as Partial<Record<"health" | "fitness" | "happiness" | "aura" | "connectLevel", number>>;
@@ -140,8 +160,7 @@ export async function POST(request: Request) {
 
       const balanceBefore = player.walletBalance;
       const balanceAfter = balanceBefore - cost + BigInt(config.reward);
-      const bankAndSavings = player.bankBalance + player.savingsBalance + player.bondsBalance;
-      const netWorthAfter = balanceAfter + bankAndSavings;
+      const netWorthAfter = player.totalNetWorth - cost + BigInt(config.reward);
 
       const updated = await tx.player.update({
         where: { id: playerId },
@@ -189,7 +208,8 @@ export async function POST(request: Request) {
         ...config.changes,
         cost: config.cost,
         reward: config.reward,
-        ...(key === "greet_neighbour" && targetName ? { targetName } : {}),
+        gameDayNumber: gameClock.dayNumber,
+        ...(key === "greet_neighbour" && targetName ? { targetName, targetArea: player.currentArea, ...(targetId ? { targetId } : {}) } : {}),
       };
       const message = key === "greet_neighbour" && targetName
         ? `You greeted ${targetName}. A friendly conversation helped build your connections.`
@@ -211,6 +231,7 @@ export async function POST(request: Request) {
           data: statChanges,
         },
       });
+      await advanceGameClock(tx, playerId, ACTIVITY_GAME_MINUTES[key], `activity_${key}`);
 
       return { ...updated, message, activity: key, activityLabel: config.label, reward: config.reward, cost: config.cost };
     });

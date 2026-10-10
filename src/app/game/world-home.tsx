@@ -4,6 +4,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { Environment, OrbitControls, Text } from "@react-three/drei";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { getNightFactor, isNightTime, mixHexColor } from "@/lib/game-clock-utils";
 
 export type CharacterLook = {
   gender: string;
@@ -317,24 +318,25 @@ export function Character({ look, onPosition, moveTarget, streetMode = false, sh
   );
 }
 
-function RoomScene({ look, onPosition, moveTarget }: { look: CharacterLook; onPosition: (x: number, z: number) => void; moveTarget: { x: number; z: number } | null }) {
+function RoomScene({ look, sceneId, onPosition, moveTarget, isNight, nightFactor }: { look: CharacterLook; sceneId: string; onPosition: (x: number, z: number) => void; moveTarget: { x: number; z: number } | null; isNight: boolean; nightFactor: number }) {
   return (
     <>
       <color attach="background" args={["#252b2d"]} />
-      <ambientLight intensity={1.55} />
-      <directionalLight position={[4, 8, 5]} intensity={2.1} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
-      <hemisphereLight args={["#fff1d2", "#7b8067", 1.1]} />
-      <RoomFurniture sceneId={look.background === "rich" ? "guzape_mansion_v1" : "nyanya_shared_room_v1"} />
+      <ambientLight intensity={1.55 - 0.93 * nightFactor} />
+      <directionalLight position={[4, 8, 5]} color={mixHexColor("#ffffff", "#9aaddd", nightFactor)} intensity={2.1 - 1.38 * nightFactor} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
+      <hemisphereLight args={[mixHexColor("#fff1d2", "#26344f", nightFactor), "#7b8067", 1.1 - 0.6 * nightFactor]} />
+      <RoomFurniture sceneId={sceneId} />
       <Character look={look} onPosition={onPosition} moveTarget={moveTarget} showCrown />
       <Text position={[-3.65, 2.75, 3.72]} rotation={[0, 0, 0]} fontSize={0.14} color="#f4e5b5" anchorX="center">EXIT</Text>
-      <Environment preset="apartment" />
+      <Environment preset="apartment" environmentIntensity={1 - 0.72 * nightFactor} />
     </>
   );
 }
 
 
-type NpcProfile = { name: string; role: string; x: number; z: number };
+type NpcProfile = { id: string; name: string; role: string; x: number; z: number };
 type AmbientPedestrianProps = {
+  id?: string;
   x: number;
   z: number;
   shirt: string;
@@ -350,7 +352,39 @@ type AmbientPedestrianProps = {
   onSelect?: (npc: NpcProfile) => void;
 };
 
-function AmbientPedestrian({ x, z, shirt, trousers, skin, hair, gender = "male", hairStyle = "low_cut", walking = false, waving = false, name = "Neighbour", role = "Local resident", onSelect }: AmbientPedestrianProps) {
+const STREET_NPC_FIRST_NAMES = [
+  "Amina", "Tunde", "Zainab", "Emeka", "Hauwa", "Chinedu", "Maryam", "Sadiq",
+  "Fatima", "Bashir", "Hadiza", "Ifeanyi", "Musa", "Amaka", "Yusuf", "Ngozi",
+  "Abdul", "Kemi", "Yakubu", "Nneka", "Bello", "Aisha", "Ibrahim", "Ada",
+];
+const STREET_NPC_LAST_NAMES = [
+  "Yusuf", "Okafor", "Bello", "Nwosu", "Musa", "Eze", "Sani", "Abdullahi",
+  "Umar", "Adeyemi", "Balogun", "Mohammed", "Ibrahim", "Olawale", "Danladi", "Garba",
+  "Ojo", "Chukwu", "Bako", "Aliyu", "Onyeka", "Audu", "Mamman", "Bakare",
+];
+const STREET_NPC_ROLES = [
+  "Shop owner", "University student", "Neighbour", "Ride-hailing driver",
+  "Office worker", "Local trader", "Creative freelancer", "Community volunteer",
+];
+
+function stableHash(value: string) {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = Math.imul(hash ^ value.charCodeAt(index), 16777619);
+  }
+  return hash >>> 0;
+}
+
+function getStreetNpcIdentity(area: string, x: number, z: number) {
+  const slug = area.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const id = `street:${slug}:${x.toFixed(1)}:${z.toFixed(1)}`;
+  const first = STREET_NPC_FIRST_NAMES[stableHash(id + ":first") % STREET_NPC_FIRST_NAMES.length];
+  const last = STREET_NPC_LAST_NAMES[stableHash(id + ":last") % STREET_NPC_LAST_NAMES.length];
+  const role = STREET_NPC_ROLES[stableHash(id + ":role") % STREET_NPC_ROLES.length];
+  return { id, name: `${first} ${last}`, role };
+}
+
+function AmbientPedestrian({ id, x, z, shirt, trousers, skin, hair, gender = "male", hairStyle = "low_cut", walking = false, waving = false, name = "Neighbour", role = "Local resident", onSelect }: AmbientPedestrianProps) {
   const root = useRef<THREE.Group>(null);
   const waveArm = useRef<THREE.Mesh>(null);
 
@@ -360,7 +394,7 @@ function AmbientPedestrian({ x, z, shirt, trousers, skin, hair, gender = "male",
   });
 
   return (
-    <group ref={root} position={[x, 0, z]} onClick={(event) => { event.stopPropagation(); onSelect?.({ name, role, x, z }); }} onPointerOver={() => { document.body.style.cursor = "pointer"; }} onPointerOut={() => { document.body.style.cursor = "auto"; }}>
+    <group ref={root} position={[x, 0, z]} onClick={(event) => { event.stopPropagation(); onSelect?.({ id: id ?? `resident:${name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-")}`, name, role, x, z }); }} onPointerOver={() => { document.body.style.cursor = "pointer"; }} onPointerOut={() => { document.body.style.cursor = "auto"; }}>
       <mesh position={[0, 0.035, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.2, 0.29, 20]} /><meshBasicMaterial color="#f4ce58" transparent opacity={0.72} /></mesh>
       <mesh position={[0, 0.63, 0]} castShadow><capsuleGeometry args={[0.14, 0.55, 4, 8]} /><meshStandardMaterial color={shirt} roughness={0.86} /></mesh>
       <mesh position={[0, 1.12, 0]} castShadow><sphereGeometry args={[0.135, 10, 8]} /><meshStandardMaterial color={skin} roughness={0.9} /></mesh>
@@ -475,10 +509,12 @@ function StreetTree({ x, z, variant = 0 }: { x: number; z: number; variant?: num
   );
 }
 
-function StreetScene({ look, area, onPosition, moveTarget, onNpcSelect }: { look: CharacterLook; area: string; onPosition: (x: number, z: number) => void; moveTarget: { x: number; z: number } | null; onNpcSelect?: (npc: NpcProfile) => void }) {
+function StreetScene({ look, area, onPosition, moveTarget, onNpcSelect, isNight, nightFactor, timeOfDayMinutes }: { look: CharacterLook; area: string; onPosition: (x: number, z: number) => void; moveTarget: { x: number; z: number } | null; onNpcSelect?: (npc: NpcProfile) => void; isNight: boolean; nightFactor: number; timeOfDayMinutes: number }) {
   const isQuiet = ["Maitama", "Asokoro", "Guzape"].includes(area);
   const isCentral = area === "Central Area";
   const isWuse = area === "Wuse 2";
+  const hour = Math.floor(timeOfDayMinutes / 60);
+  const isRushHour = (hour >= 7 && hour < 9) || (hour >= 16 && hour < 19);
   const buildings = isCentral ? [
     { x: -13, z: -10, height: 11.8, width: 4.8, color: "#b9c3c8", label: "CIVIC OFFICE" },
     { x: -7, z: -10, height: 14, width: 4.6, color: "#b7c5cb", label: "BUSINESS TOWER" },
@@ -530,15 +566,45 @@ function StreetScene({ look, area, onPosition, moveTarget, onNpcSelect }: { look
     { x: 10.5, z: 9.4, height: 4.3, width: 5.5, color: "#d0af8d", label: "LAUNDRY" },
   ];
   const vehicles = isQuiet ? [
-    { startX: -10, z: -1.35, speed: 1.6, color: "#ba3f37", roofColor: "#3b464f" },
-    { startX: 7, z: 1.45, speed: -1.3, color: "#477c65", roofColor: "#384b51" },
+    { startX: -10, z: -1.35, speed: 1.2, color: "#ba3f37", roofColor: "#3b464f" },
+  ] : isNight ? isWuse ? [
+    { startX: -10, z: -1.35, speed: 1.8, color: "#ba3f37", roofColor: "#3b464f" },
+    { startX: 3, z: -1.35, speed: 1.4, color: "#e2bd45", roofColor: "#475b63" },
+    { startX: 9, z: 1.45, speed: -1.6, color: "#477c65", roofColor: "#384b51" },
+  ] : [
+    { startX: -10, z: -1.35, speed: 1.2, color: "#ba3f37", roofColor: "#3b464f" },
+    { startX: 9, z: 1.45, speed: -1.1, color: "#477c65", roofColor: "#384b51" },
+  ] : isRushHour ? [
+    { startX: -10, z: -1.35, speed: 2.1, color: "#ba3f37", roofColor: "#3b464f" },
+    { startX: 3, z: -1.35, speed: isCentral ? 2.45 : 1.8, color: "#e2bd45", roofColor: "#475b63" },
+    { startX: 9, z: 1.45, speed: -1.7, color: "#477c65", roofColor: "#384b51" },
+    { startX: -4, z: 1.45, speed: -2.2, color: "#ece6d8", roofColor: "#536778" },
+    { startX: 14, z: -1.35, speed: 1.55, color: "#d8d6ce", roofColor: "#455563" },
+    { startX: -14, z: 1.45, speed: -1.35, color: "#a8b5bd", roofColor: "#293c48" },
   ] : [
     { startX: -10, z: -1.35, speed: 2.2, color: "#ba3f37", roofColor: "#3b464f" },
     { startX: 3, z: -1.35, speed: isCentral ? 2.6 : 1.5, color: "#e2bd45", roofColor: "#475b63" },
     { startX: 9, z: 1.45, speed: -1.8, color: "#477c65", roofColor: "#384b51" },
     { startX: -4, z: 1.45, speed: -2.5, color: "#ece6d8", roofColor: "#536778" },
   ];
-  const people: AmbientPedestrianProps[] = isQuiet ? [
+  const nightCrowd: AmbientPedestrianProps[] = isWuse ? [
+    { x: -8, z: -5.3, shirt: "#276f58", trousers: "#26364a", skin: "#75462f", hair: "#181513", walking: true },
+    { x: -3, z: -5.4, shirt: "#b64b45", trousers: "#182c3e", skin: "#8d5a3b", hair: "#171514", gender: "female", hairStyle: "natural_puff", waving: true },
+    { x: 4, z: -5.35, shirt: "#e4ba37", trousers: "#334b39", skin: "#603923", hair: "#171514", walking: true },
+    { x: 8, z: 5.25, shirt: "#293d7a", trousers: "#d2b88d", skin: "#a66e49", hair: "#171514", gender: "female", hairStyle: "braids", waving: true },
+    { x: 2, z: 5.35, shirt: "#87456d", trousers: "#302f38", skin: "#75462f", hair: "#171514", walking: true },
+    { x: 11, z: -5.25, shirt: "#9b6a2f", trousers: "#26374b", skin: "#8d5a3b", hair: "#171514", waving: true },
+  ] : isQuiet ? [
+    { x: 6, z: 5.25, shirt: "#293d7a", trousers: "#d2b88d", skin: "#a66e49", hair: "#171514", gender: "female", hairStyle: "braids", waving: false },
+  ] : isCentral ? [
+    { x: -8, z: -5.3, shirt: "#276f58", trousers: "#26364a", skin: "#75462f", hair: "#181513", walking: false },
+    { x: 6, z: 5.25, shirt: "#293d7a", trousers: "#d2b88d", skin: "#a66e49", hair: "#171514", gender: "female", hairStyle: "braids", waving: true },
+  ] : [
+    { x: -8, z: -5.3, shirt: "#276f58", trousers: "#26364a", skin: "#75462f", hair: "#181513", walking: false },
+    { x: 6, z: 5.25, shirt: "#293d7a", trousers: "#d2b88d", skin: "#a66e49", hair: "#171514", gender: "female", hairStyle: "braids", waving: true },
+    { x: 2, z: 5.35, shirt: "#87456d", trousers: "#302f38", skin: "#75462f", hair: "#171514" },
+  ];
+  const dayCrowd: AmbientPedestrianProps[] = isQuiet ? [
     { x: -8, z: -5.3, shirt: "#276f58", trousers: "#26364a", skin: "#75462f", hair: "#181513", walking: false },
     { x: 6, z: 5.25, shirt: "#293d7a", trousers: "#d2b88d", skin: "#a66e49", hair: "#171514", gender: "female", hairStyle: "braids", waving: true },
   ] : isWuse ? [
@@ -558,15 +624,16 @@ function StreetScene({ look, area, onPosition, moveTarget, onNpcSelect }: { look
     { x: -5, z: 5.35, shirt: "#166b70", trousers: "#26374b", skin: "#8d5a3b", hair: "#171514", gender: "female", hairStyle: "natural_puff", walking: true },
     { x: 2, z: 5.35, shirt: "#87456d", trousers: "#302f38", skin: "#75462f", hair: "#171514" },
   ];
+  const people = isNight ? nightCrowd : dayCrowd;
   const streetLabel = isWuse ? "AMINU KANO CRESCENT · WUSE 2" : area.toUpperCase() + " · ABUJA";
 
   return (
     <>
-      <color attach="background" args={["#a9d4ee"]} />
-      <fog attach="fog" args={["#c9dfeb", 24, 48]} />
-      <ambientLight intensity={1.05} />
-      <hemisphereLight args={["#e8f5ff", "#786b53", 1.25]} />
-      <directionalLight position={[-7, 16, 8]} intensity={2.35} castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
+      <color attach="background" args={[mixHexColor("#a9d4ee", "#10192d", nightFactor)]} />
+      <fog attach="fog" args={[mixHexColor("#c9dfeb", "#10192d", nightFactor), 24, 48]} />
+      <ambientLight intensity={1.05 - 0.67 * nightFactor} />
+      <hemisphereLight args={[mixHexColor("#e8f5ff", "#293653", nightFactor), "#786b53", 1.25 - 0.75 * nightFactor]} />
+      <directionalLight position={[-7, 16, 8]} color={mixHexColor("#ffffff", "#8291bd", nightFactor)} intensity={2.35 - 2.13 * nightFactor} castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]} receiveShadow><planeGeometry args={[42, 30]} /><meshStandardMaterial color="#c5bca9" roughness={1} /></mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow><planeGeometry args={[36, 8.4]} /><meshStandardMaterial color="#50565b" roughness={0.95} /></mesh>
       <mesh position={[0, 0.09, -4.9]} receiveShadow><boxGeometry args={[36, 0.18, 1.7]} /><meshStandardMaterial color="#b9b3a4" roughness={1} /></mesh>
@@ -582,6 +649,8 @@ function StreetScene({ look, area, onPosition, moveTarget, onNpcSelect }: { look
       {[-11, -3, 5, 12].map((x, i) => <StreetTree key={`tree-s-${x}`} x={x} z={6.35} variant={i + 1} />)}
       {[-12, -4, 4, 12].map((x) => <StreetLamp key={`lamp-n-${x}`} x={x} z={-5.15} />)}
       {[-8, 0, 8].map((x) => <StreetLamp key={`lamp-s-${x}`} x={x} z={5.15} />)}
+      {nightFactor > 0 && [-12, -4, 4, 12].map((x) => <pointLight key={`lamp-glow-n-${x}`} position={[x, 2.8, -5.15]} color="#ffdca3" intensity={0.75 * nightFactor} distance={9} />)}
+      {nightFactor > 0 && [-8, 0, 8].map((x) => <pointLight key={`lamp-glow-s-${x}`} position={[x, 2.8, 5.15]} color="#ffdca3" intensity={0.75 * nightFactor} distance={9} />)}
       {/* Raised zebra crossing near the player spawn, with clearly marked road edges. */}
       {Array.from({ length: 7 }, (_, i) => <mesh key={`crossing-${i}`} position={[-1.8 + i * 0.6, 0.025, -2.15]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[0.32, 1.15]} /><meshStandardMaterial color="#f0eee5" roughness={0.9} /></mesh>)}
       <mesh position={[0, 0.045, -3.95]}><boxGeometry args={[36, 0.055, 0.07]} /><meshStandardMaterial color="#d9c9a3" /></mesh>
@@ -592,11 +661,11 @@ function StreetScene({ look, area, onPosition, moveTarget, onNpcSelect }: { look
         <mesh position={[0.54, 2.45, 0]}><boxGeometry args={[0.25, 0.12, 0.18]} /><meshStandardMaterial color="#f2df9f" emissive="#f2df9f" emissiveIntensity={0.3} /></mesh>
       </group>
       {vehicles.map((vehicle) => <MovingCar key={vehicle.startX + ":" + vehicle.z} {...vehicle} />)}
-      {!isQuiet && <><KekeNapep startX={-2} z={-1.32} speed={1.25} /><KekeNapep startX={12} z={1.42} speed={-1.05} /></>}
-      {people.map((person, index) => <AmbientPedestrian key={index} {...person} name={["Amina Yusuf", "Tunde Okafor", "Zainab Bello", "Emeka Nwosu", "Hauwa Musa", "Chinedu Eze", "Maryam Sani", "Sadiq Abdullahi"][index % 8]} role={["Shop owner", "University student", "Neighbour", "Ride-hailing driver", "Office worker", "Local trader", "Creative freelancer", "Community volunteer"][index % 8]} onSelect={onNpcSelect} />)}
+      {!isQuiet && (!isNight || isWuse || isCentral) && <><KekeNapep startX={-2} z={-1.32} speed={isNight ? 0.95 : 1.25} /><KekeNapep startX={12} z={1.42} speed={isNight ? -0.8 : -1.05} />{isRushHour && <KekeNapep startX={-14} z={-1.32} speed={1.05} />}</>}
+      {people.map((person) => { const identity = getStreetNpcIdentity(area, person.x, person.z); return <AmbientPedestrian key={identity.id} {...person} {...identity} onSelect={onNpcSelect} />; })}
       <Character look={look} onPosition={onPosition} moveTarget={moveTarget} streetMode showCrown />
       <Text position={[0, 3.8, -5.4]} rotation={[0, 0, 0]} fontSize={0.38} color="#153c37" anchorX="center">{streetLabel}</Text>
-      <Environment preset="city" />
+      <Environment preset="city" environmentIntensity={1 - 0.82 * nightFactor} />
     </>
   );
 }
@@ -615,7 +684,7 @@ function PalmTree({ position }: { position: [number, number, number] }) {
   );
 }
 
-function MosqueScene({ look, onPosition, moveTarget, onNpcSelect }: { look: CharacterLook; onPosition: (x: number, z: number) => void; moveTarget: { x: number; z: number } | null; onNpcSelect?: (npc: NpcProfile) => void }) {
+function MosqueScene({ look, onPosition, moveTarget, onNpcSelect, isNight, nightFactor }: { look: CharacterLook; onPosition: (x: number, z: number) => void; moveTarget: { x: number; z: number } | null; onNpcSelect?: (npc: NpcProfile) => void; isNight: boolean; nightFactor: number }) {
   const worshippers: AmbientPedestrianProps[] = [
     { x: -4.8, z: 2.3, shirt: "#f3eee2", trousers: "#e8e1d2", skin: "#75462f", hair: "#171514", walking: true },
     { x: 4.7, z: 1.8, shirt: "#27715e", trousers: "#26374b", skin: "#603923", hair: "#171514", gender: "female", hairStyle: "braids", walking: true },
@@ -625,10 +694,10 @@ function MosqueScene({ look, onPosition, moveTarget, onNpcSelect }: { look: Char
 
   return (
     <>
-      <color attach="background" args={["#b7d9e9"]} />
-      <ambientLight intensity={1.35} />
-      <hemisphereLight args={["#f8f5e9", "#78846c", 1.25]} />
-      <directionalLight position={[7, 13, 8]} intensity={2.1} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
+      <color attach="background" args={[mixHexColor("#b7d9e9", "#111b30", nightFactor)]} />
+      <ambientLight intensity={1.35 - 0.87 * nightFactor} />
+      <hemisphereLight args={[mixHexColor("#f8f5e9", "#283552", nightFactor), "#78846c", 1.25 - 0.75 * nightFactor]} />
+      <directionalLight position={[7, 13, 8]} color={mixHexColor("#ffffff", "#8794bf", nightFactor)} intensity={2.1 - 1.84 * nightFactor} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.06, 0]} receiveShadow><planeGeometry args={[19, 16]} /><meshStandardMaterial color="#d2c9b9" roughness={0.96} /></mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 1.5]} receiveShadow><planeGeometry args={[11, 8]} /><meshStandardMaterial color="#b6a58a" roughness={1} /></mesh>
       {Array.from({ length: 5 }, (_, row) => Array.from({ length: 5 }, (_, col) => <mesh key={row + ":" + col} position={[-3.8 + col * 1.9, 0.025, -4.4 + row * 0.95]}><boxGeometry args={[1.55, 0.025, 0.72]} /><meshStandardMaterial color={(row + col) % 2 ? "#1b7568" : "#bb8a4c"} roughness={0.9} /></mesh>))}
@@ -652,7 +721,7 @@ function MosqueScene({ look, onPosition, moveTarget, onNpcSelect }: { look: Char
       <Character look={look} onPosition={onPosition} moveTarget={moveTarget} streetMode showCrown />
       <Text position={[0, 5.65, -4.5]} fontSize={0.34} color="#17574b" anchorX="center">ABUJA NATIONAL MOSQUE</Text>
       <Text position={[0, 0.4, 6.6]} fontSize={0.24} color="#536b61" anchorX="center">COURTYARD · CENTRAL AREA</Text>
-      <Environment preset="city" />
+      <Environment preset="city" environmentIntensity={1 - 0.82 * nightFactor} />
     </>
   );
 }
@@ -669,9 +738,11 @@ function ClickGround({ width, depth, onMoveTo }: { width: number; depth: number;
   );
 }
 
-export default function WorldHome({ look, sceneId, immersive = false, worldScene = "home", area = "Nyanya", onNpcSelect }: { look: CharacterLook; sceneId: string; immersive?: boolean; worldScene?: "home" | "street" | "mosque"; area?: string; onNpcSelect?: (npc: NpcProfile) => void }) {
+export default function WorldHome({ look, sceneId, immersive = false, worldScene = "home", area = "Nyanya", timeOfDayMinutes = 8 * 60, onNpcSelect }: { look: CharacterLook; sceneId: string; immersive?: boolean; worldScene?: "home" | "street" | "mosque"; area?: string; timeOfDayMinutes?: number; onNpcSelect?: (npc: NpcProfile) => void }) {
   const [position, setPosition] = useState({ x: 0, z: 0 });
   const [moveTarget, setMoveTarget] = useState<{ x: number; z: number } | null>(null);
+  const isNight = isNightTime(timeOfDayMinutes);
+  const nightFactor = getNightFactor(timeOfDayMinutes);
   const homeTitle = worldScene === "mosque" ? "ABUJA NATIONAL MOSQUE" : worldScene === "street" ? `${area.toUpperCase()} STREET` : sceneId === "guzape_mansion_v1" ? "GUZAPE MANSION" : "NYANYA SHARED ROOM";
 
   const positionLabel = useMemo(() => `Room position: ${position.x.toFixed(1)}, ${position.z.toFixed(1)}`, [position]);
@@ -689,10 +760,10 @@ export default function WorldHome({ look, sceneId, immersive = false, worldScene
         <Canvas shadows dpr={[1, 1.5]} camera={worldScene === "home" ? { position: [7, 7.8, 8], fov: 36 } : worldScene === "mosque" ? { position: [9, 9, 11], fov: 43 } : { position: [12, 10, 13], fov: 42 }}>
           <Suspense fallback={null}>
             {worldScene === "street"
-              ? <StreetScene look={look} area={area} moveTarget={moveTarget} onPosition={(x, z) => setPosition({ x, z })} onNpcSelect={(npc) => { setMoveTarget({ x: npc.x - 1, z: npc.z }); onNpcSelect?.(npc); }} />
+              ? <StreetScene look={look} area={area} moveTarget={moveTarget} isNight={isNight} nightFactor={nightFactor} timeOfDayMinutes={timeOfDayMinutes} onPosition={(x, z) => setPosition({ x, z })} onNpcSelect={(npc) => { setMoveTarget({ x: npc.x - 1, z: npc.z }); onNpcSelect?.(npc); }} />
               : worldScene === "mosque"
-                ? <MosqueScene look={look} moveTarget={moveTarget} onPosition={(x, z) => setPosition({ x, z })} onNpcSelect={(npc) => { setMoveTarget({ x: npc.x - 1, z: npc.z }); onNpcSelect?.(npc); }} />
-                : <RoomScene look={look} moveTarget={moveTarget} onPosition={(x, z) => setPosition({ x, z })} />}
+                ? <MosqueScene look={look} moveTarget={moveTarget} isNight={isNight} nightFactor={nightFactor} onPosition={(x, z) => setPosition({ x, z })} onNpcSelect={(npc) => { setMoveTarget({ x: npc.x - 1, z: npc.z }); onNpcSelect?.(npc); }} />
+                : <RoomScene look={look} sceneId={sceneId} moveTarget={moveTarget} isNight={isNight} nightFactor={nightFactor} onPosition={(x, z) => setPosition({ x, z })} />}
             <ClickGround
               width={worldScene === "home" ? (sceneId === "guzape_mansion_v1" ? 13 : 9) : worldScene === "mosque" ? 18 : 42}
               depth={worldScene === "home" ? (sceneId === "guzape_mansion_v1" ? 11 : 8) : worldScene === "mosque" ? 15 : 30}

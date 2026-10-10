@@ -52,6 +52,8 @@ export default async function GamePage() {
       homeArea: true,
       housingType: true,
       currentJob: true,
+      shiftsCompleted: true,
+      performanceScore: true,
       hasVehicle: true,
       vehicleName: true,
       vehicleType: true,

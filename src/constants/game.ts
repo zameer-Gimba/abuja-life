@@ -116,20 +116,32 @@ export const BERGER = {
 // ── Jobs ───────────────────────────────────────────────────
 export const JOBS = [
   { title: "Security Guard", category: "hustle", location: "Citywide", venue: "Various", payPerShift: 3500, shiftHours: 8, minHustle: 0 },
-  { title: "Keke Driver", category: "hustle", location: "Suburbs", venue: "Berger Motor Park", payPerShift: 5000, shiftHours: 8, requiresVehicle: true },
-  { title: "Flyer Distributor", category: "hustle", location: "Wuse", venue: "Wuse Market Area", payPerShift: 2500, shiftHours: 3, minHustle: 0 },
-  { title: "Suya Spot Attendant", category: "hustle", location: "Wuse 2", venue: "Yahuza Suya", payPerShift: 4000, shiftHours: 6 },
-  { title: "Shop Assistant", category: "private", location: "Wuse Market", venue: "Wuse Market", payPerShift: 6000, shiftHours: 8, minHustle: 5 },
-  { title: "Restaurant Staff", category: "private", location: "Jabi", venue: "Jabi Lake Restaurants", payPerShift: 7000, shiftHours: 8 },
-  { title: "Hotel Staff", category: "private", location: "Central Area", venue: "Transcorp Hilton", payPerShift: 12000, shiftHours: 8, minHustle: 10 },
-  { title: "Bank Teller", category: "private", location: "Garki", venue: "Various Banks", payPerShift: 15000, shiftHours: 8, minIntelligence: 20 },
-  { title: "Junior Civil Servant", category: "government", location: "Garki", venue: "Federal Secretariat", payPerShift: 18000, shiftHours: 8, minIntelligence: 15 },
+  { title: "Keke Driver", category: "hustle", location: "Suburbs", venue: "Berger Motor Park", payPerShift: 5000, shiftHours: 8, requiresVehicle: true, opensAt: 6, closesAt: 20 },
+  { title: "Flyer Distributor", category: "hustle", location: "Wuse 2", venue: "Wuse Market Area", payPerShift: 2500, shiftHours: 3, minHustle: 0, opensAt: 8, closesAt: 18 },
+  { title: "Suya Spot Attendant", category: "hustle", location: "Wuse 2", venue: "Yahuza Suya", payPerShift: 4000, shiftHours: 6, opensAt: 16, closesAt: 2 },
+  { title: "Shop Assistant", category: "private", location: "Wuse 2", venue: "Wuse Market", payPerShift: 6000, shiftHours: 8, minHustle: 5, opensAt: 9, closesAt: 20 },
+  { title: "Restaurant Staff", category: "private", location: "Jabi", venue: "Jabi Lake Restaurants", payPerShift: 7000, shiftHours: 8, opensAt: 10, closesAt: 24 },
+  { title: "Hotel Staff", category: "private", location: "Central Area", venue: "Transcorp Hilton", payPerShift: 12000, shiftHours: 8, minHustle: 10, opensAt: 6, closesAt: 24 },
+  { title: "Bank Teller", category: "private", location: "Garki", venue: "Various Banks", payPerShift: 15000, shiftHours: 8, minIntelligence: 20, opensAt: 8, closesAt: 18 },
+  { title: "Junior Civil Servant", category: "government", location: "Garki", venue: "Federal Secretariat", payPerShift: 18000, shiftHours: 8, minIntelligence: 15, opensAt: 8, closesAt: 18 },
   { title: "Real Estate Agent", category: "hustle", location: "Citywide", venue: "Various", payPerShift: 0, shiftHours: 0, commissionBased: true },
   { title: "Alone Driver", category: "hustle", location: "Citywide", venue: "Own Vehicle", payPerShift: 8000, shiftHours: 8, requiresVehicle: true },
   { title: "Event Planner", category: "private", location: "Citywide", venue: "Various", payPerShift: 25000, shiftHours: 10, minConnect: 20 },
   { title: "Government Contractor", category: "elite", location: "CBD", venue: "NASS Area", payPerShift: 0, shiftHours: 0, commissionBased: true, minConnect: 50 },
-  { title: "Hype Man", category: "hustle", location: "Wuse 2", venue: "Hustle & Bustle Club", payPerShift: 10000, shiftHours: 5, opensAt: 22 },
+  { title: "Hype Man", category: "hustle", location: "Wuse 2", venue: "Hustle & Bustle Club", payPerShift: 10000, shiftHours: 5, opensAt: 22, closesAt: 6 },
 ]
+
+// Physical workplaces required before a paid shift can be completed.
+export const JOB_WORKPLACE_AREAS: Record<string, string> = {
+  "Flyer Distributor": "Wuse 2",
+  "Suya Spot Attendant": "Wuse 2",
+  "Shop Assistant": "Wuse 2",
+  "Restaurant Staff": "Jabi",
+  "Hotel Staff": "Central Area",
+  "Bank Teller": "Garki",
+  "Junior Civil Servant": "Garki",
+  "Hype Man": "Wuse 2",
+};
 
 // ── Universities ───────────────────────────────────────────
 export const UNIVERSITIES = [

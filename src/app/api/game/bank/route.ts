@@ -6,6 +6,15 @@ import { db } from "@/lib/db";
 const ACTIONS = ["deposit", "withdraw", "save", "unsave", "pay_debt"] as const;
 type Action = (typeof ACTIONS)[number];
 
+function toSerializableBalances<T extends object>(balances: T) {
+  return Object.fromEntries(
+    Object.entries(balances).map(([key, value]) => [
+      key,
+      typeof value === "bigint" ? value.toString() : value,
+    ]),
+  );
+}
+
 export async function GET() {
   const session = await getServerSession(authOptions);
   const playerId = session?.user?.id;
@@ -13,7 +22,14 @@ export async function GET() {
 
   const player = await db.player.findUnique({
     where: { id: playerId },
-    select: { walletBalance: true, bankBalance: true, savingsBalance: true, bondsBalance: true, debt: true, totalNetWorth: true },
+    select: {
+      walletBalance: true,
+      bankBalance: true,
+      savingsBalance: true,
+      bondsBalance: true,
+      debt: true,
+      totalNetWorth: true,
+    },
   });
   if (!player) return NextResponse.json({ error: "Player not found." }, { status: 404 });
 
@@ -21,12 +37,24 @@ export async function GET() {
     where: { playerId },
     orderBy: { createdAt: "desc" },
     take: 20,
-    select: { id: true, type: true, amount: true, description: true, category: true, balanceAfter: true, createdAt: true },
+    select: {
+      id: true,
+      type: true,
+      amount: true,
+      description: true,
+      category: true,
+      balanceAfter: true,
+      createdAt: true,
+    },
   });
 
   return NextResponse.json({
-    balances: Object.fromEntries(Object.entries(player).map(([key, value]) => [key, typeof value === "bigint" ? value.toString() : value])),
-    transactions: transactions.map((t) => ({ ...t, amount: t.amount.toString(), balanceAfter: t.balanceAfter.toString() })),
+    balances: toSerializableBalances(player),
+    transactions: transactions.map((transaction) => ({
+      ...transaction,
+      amount: transaction.amount.toString(),
+      balanceAfter: transaction.balanceAfter.toString(),
+    })),
   });
 }
 
@@ -38,68 +66,145 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const action = body?.action as Action;
   const amount = Number(body?.amount);
-  if (!ACTIONS.includes(action)) return NextResponse.json({ error: "Invalid banking action." }, { status: 400 });
-  if (!Number.isSafeInteger(amount) || amount <= 0) return NextResponse.json({ error: "Enter a valid positive whole-number amount." }, { status: 400 });
-
-  const player = await db.player.findUnique({
-    where: { id: playerId },
-    select: { walletBalance: true, bankBalance: true, savingsBalance: true, debt: true, totalNetWorth: true },
-  });
-  if (!player) return NextResponse.json({ error: "Player not found." }, { status: 404 });
-
-  const n = BigInt(amount);
-  let wallet = player.walletBalance;
-  let bank = player.bankBalance;
-  let savings = player.savingsBalance;
-  let debt = player.debt;
-  let description = "";
-  let category = "banking";
-
-  if (action === "deposit") {
-    if (wallet < n) return NextResponse.json({ error: "Insufficient Game Naira in your wallet." }, { status: 400 });
-    wallet -= n; bank += n; description = "Cash deposited into bank";
-  } else if (action === "withdraw") {
-    if (bank < n) return NextResponse.json({ error: "Insufficient bank balance." }, { status: 400 });
-    bank -= n; wallet += n; description = "Cash withdrawn from bank";
-  } else if (action === "save") {
-    if (bank < n) return NextResponse.json({ error: "Insufficient bank balance for savings." }, { status: 400 });
-    bank -= n; savings += n; description = "Transfer to savings";
-    category = "savings";
-  } else if (action === "unsave") {
-    if (savings < n) return NextResponse.json({ error: "Insufficient savings balance." }, { status: 400 });
-    savings -= n; bank += n; description = "Savings withdrawn to bank";
-    category = "savings";
-  } else if (action === "pay_debt") {
-    if (wallet < n) return NextResponse.json({ error: "Insufficient wallet balance to pay debt." }, { status: 400 });
-    if (debt === 0n) return NextResponse.json({ error: "You have no outstanding debt." }, { status: 400 });
-    const payment = n > debt ? debt : n;
-    wallet -= payment; debt -= payment; description = "Debt repayment"; category = "debt";
+  if (!ACTIONS.includes(action)) {
+    return NextResponse.json({ error: "Invalid banking action." }, { status: 400 });
+  }
+  if (!Number.isSafeInteger(amount) || amount <= 0) {
+    return NextResponse.json(
+      { error: "Enter a valid positive whole-number amount." },
+      { status: 400 },
+    );
   }
 
-  const walletDelta = wallet - player.walletBalance;
-  const updated = await db.$transaction(async (tx) => {
-    const updatedPlayer = await tx.player.update({
-      where: { id: playerId },
-      data: { walletBalance: wallet, bankBalance: bank, savingsBalance: savings, debt, lastSeen: new Date() },
-      select: { walletBalance: true, bankBalance: true, savingsBalance: true, bondsBalance: true, debt: true, totalNetWorth: true },
+  const requestedAmount = BigInt(amount);
+
+  try {
+    const result = await db.$transaction(async (tx) => {
+      // Lock this player's row so concurrent banking requests cannot overwrite each other's balances.
+      await tx.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "players" WHERE "id" = ${playerId} FOR UPDATE`;
+
+      const player = await tx.player.findUnique({
+        where: { id: playerId },
+        select: {
+          walletBalance: true,
+          bankBalance: true,
+          savingsBalance: true,
+          bondsBalance: true,
+          debt: true,
+          totalNetWorth: true,
+        },
+      });
+      if (!player) throw new Error("PLAYER_NOT_FOUND");
+
+      let wallet = player.walletBalance;
+      let bank = player.bankBalance;
+      let savings = player.savingsBalance;
+      let debt = player.debt;
+      let description = "";
+      let category = "banking";
+      let transactionType: "income" | "expense" | "transfer";
+      let transactionAmount = requestedAmount;
+
+      if (action === "deposit") {
+        if (wallet < requestedAmount) throw new Error("INSUFFICIENT_WALLET");
+        wallet -= requestedAmount;
+        bank += requestedAmount;
+        description = "Cash deposited into bank";
+        transactionType = "expense";
+        transactionAmount = -requestedAmount;
+      } else if (action === "withdraw") {
+        if (bank < requestedAmount) throw new Error("INSUFFICIENT_BANK");
+        bank -= requestedAmount;
+        wallet += requestedAmount;
+        description = "Cash withdrawn from bank";
+        transactionType = "income";
+      } else if (action === "save") {
+        if (bank < requestedAmount) throw new Error("INSUFFICIENT_BANK_FOR_SAVINGS");
+        bank -= requestedAmount;
+        savings += requestedAmount;
+        description = "Transfer to savings";
+        category = "savings";
+        transactionType = "transfer";
+      } else if (action === "unsave") {
+        if (savings < requestedAmount) throw new Error("INSUFFICIENT_SAVINGS");
+        savings -= requestedAmount;
+        bank += requestedAmount;
+        description = "Savings withdrawn to bank";
+        category = "savings";
+        transactionType = "transfer";
+      } else {
+        if (debt === 0n) throw new Error("NO_DEBT");
+        const payment = requestedAmount > debt ? debt : requestedAmount;
+        if (wallet < payment) throw new Error("INSUFFICIENT_WALLET_FOR_DEBT");
+        wallet -= payment;
+        debt -= payment;
+        description = `Debt repayment (₦${payment.toString()})`;
+        category = "debt";
+        transactionType = "expense";
+        transactionAmount = -payment;
+      }
+
+      const updated = await tx.player.update({
+        where: { id: playerId },
+        data: {
+          walletBalance: wallet,
+          bankBalance: bank,
+          savingsBalance: savings,
+          debt,
+          lastSeen: new Date(),
+        },
+        select: {
+          walletBalance: true,
+          bankBalance: true,
+          savingsBalance: true,
+          bondsBalance: true,
+          debt: true,
+          totalNetWorth: true,
+        },
+      });
+
+      await tx.transaction.create({
+        data: {
+          playerId,
+          type: transactionType,
+          amount: transactionAmount,
+          description,
+          category,
+          balanceBefore: player.walletBalance,
+          balanceAfter: wallet,
+        },
+      });
+
+      return { description, balances: updated };
     });
 
-    await tx.transaction.create({
-      data: {
-        playerId,
-        type: walletDelta < 0n ? "expense" : "income",
-        amount: n,
-        description,
-        category,
-        balanceBefore: player.walletBalance,
-        balanceAfter: wallet,
-      },
+    return NextResponse.json({
+      message: result.description + ".",
+      balances: toSerializableBalances(result.balances),
     });
-    return updatedPlayer;
-  });
-
-  return NextResponse.json({
-    message: description + ".",
-    balances: Object.fromEntries(Object.entries(updated).map(([key, value]) => [key, typeof value === "bigint" ? value.toString() : value])),
-  });
+  } catch (error) {
+    const code = error instanceof Error ? error.message : "UNKNOWN";
+    if (code === "PLAYER_NOT_FOUND") {
+      return NextResponse.json({ error: "Player not found." }, { status: 404 });
+    }
+    if (code === "INSUFFICIENT_WALLET") {
+      return NextResponse.json({ error: "Insufficient Game Naira in your wallet." }, { status: 400 });
+    }
+    if (code === "INSUFFICIENT_BANK") {
+      return NextResponse.json({ error: "Insufficient bank balance." }, { status: 400 });
+    }
+    if (code === "INSUFFICIENT_BANK_FOR_SAVINGS") {
+      return NextResponse.json({ error: "Insufficient bank balance for savings." }, { status: 400 });
+    }
+    if (code === "INSUFFICIENT_SAVINGS") {
+      return NextResponse.json({ error: "Insufficient savings balance." }, { status: 400 });
+    }
+    if (code === "INSUFFICIENT_WALLET_FOR_DEBT") {
+      return NextResponse.json({ error: "Insufficient wallet balance to pay debt." }, { status: 400 });
+    }
+    if (code === "NO_DEBT") {
+      return NextResponse.json({ error: "You have no outstanding debt." }, { status: 400 });
+    }
+    return NextResponse.json({ error: "Banking action failed. Please try again." }, { status: 500 });
+  }
 }

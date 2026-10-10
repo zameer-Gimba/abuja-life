@@ -3,11 +3,17 @@ name: Verify Abuja Life
 on:
   push:
     branches:
+      - develop
+      - main
       - feature/persistent-world-foundation
   pull_request:
     branches:
       - develop
       - main
+
+concurrency:
+  group: verify-abuja-life-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -31,5 +37,24 @@ jobs:
         run: npm install
       - name: Generate Prisma client
         run: npx prisma generate
+      - name: Audit dependency vulnerabilities
+        run: |
+          npm audit --json > "$RUNNER_TEMP/npm-audit-report.json" || true
+          AUDIT_JSON_PATH="$RUNNER_TEMP/npm-audit-report.json" node <<'NODE'
+          const report = require(process.env.AUDIT_JSON_PATH);
+          const counts = report.metadata?.vulnerabilities ?? {};
+          console.log("Dependency audit summary:", JSON.stringify(counts));
+          for (const [name, item] of Object.entries(report.vulnerabilities ?? {})) {
+            const fixes = typeof item.fixAvailable === "object"
+              ? JSON.stringify(item.fixAvailable)
+              : String(item.fixAvailable);
+            console.log(`[${item.severity}] ${name} | direct=${item.isDirect} | range=${item.range} | fixAvailable=${fixes}`);
+            for (const advisory of item.via ?? []) {
+              if (typeof advisory === "object") {
+                console.log(`  - ${advisory.title} (${advisory.url})`);
+              }
+            }
+          }
+          NODE
       - name: Build application
         run: npm run build

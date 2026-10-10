@@ -9,7 +9,6 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@auth/prisma-adapter": "^2.11.3",
     "@paystack/inline-js": "^2.22.2",
     "@prisma/client": "^7.10.0",
     "clsx": "^2.1.1",
@@ -45,5 +44,9 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "@types/three": "^0.176.0"
+  },
+  "overrides": {
+    "deepmerge-ts": "^8.0.2",
+    "mysql2": "^3.24.4"
   }
 }

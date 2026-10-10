@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { JOBS } from "@/constants/game";
+import { JOBS, JOB_WORKPLACE_AREAS } from "@/constants/game";
+import { advanceGameClock, formatGameTime, getGameClock, isWithinOpeningWindow } from "@/lib/game-clock";
+
+
 
 export async function POST() {
   const session = await getServerSession(authOptions);
@@ -11,18 +14,24 @@ export async function POST() {
 
   try {
     const result = await db.$transaction(async (tx) => {
+      // Prevent two rapid requests from paying for the same career state concurrently.
+      await tx.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "players" WHERE "id" = ${playerId} FOR UPDATE`;
+
       const player = await tx.player.findUnique({
         where: { id: playerId },
         select: {
           id: true,
           currentJob: true,
+          currentArea: true,
           walletBalance: true,
           bankBalance: true,
           savingsBalance: true,
           bondsBalance: true,
+          totalNetWorth: true,
           hustle: true,
           intelligence: true,
           connectLevel: true,
+          hasVehicle: true,
           performanceScore: true,
           shiftsCompleted: true,
         },
@@ -33,28 +42,36 @@ export async function POST() {
 
       const job = JOBS.find((item) => item.title === player.currentJob);
       if (!job) throw new Error("JOB_NOT_FOUND");
+      // Eligibility can change after applying (for example, a vehicle can be sold).
+      if (player.hustle < (job.minHustle ?? 0)) throw new Error("HUSTLE_TOO_LOW");
+      if (player.intelligence < (job.minIntelligence ?? 0)) throw new Error("INTELLIGENCE_TOO_LOW");
+      if (player.connectLevel < (job.minConnect ?? 0)) throw new Error("CONNECTION_TOO_LOW");
+      if (job.requiresVehicle && !player.hasVehicle) throw new Error("VEHICLE_REQUIRED");
 
-      const requiredAreaByJob: Record<string, string> = {
-        "Flyer Distributor": "Wuse 2",
-        "Suya Spot Attendant": "Wuse 2",
-        "Shop Assistant": "Wuse 2",
-        "Restaurant Staff": "Jabi",
-        "Hotel Staff": "Central Area",
-        "Bank Teller": "Garki",
-        "Junior Civil Servant": "Garki",
-        "Hype Man": "Wuse 2",
-      };
-      const requiredArea = requiredAreaByJob[job.title];
+      const requiredArea = JOB_WORKPLACE_AREAS[job.title];
       if (requiredArea && player.currentArea !== requiredArea) {
-        throw new Error("WORKPLACE_" + requiredArea.toUpperCase().replace(/\\s+/g, "_"));
+        throw new Error("WORKPLACE_AREA:" + requiredArea);
+      }
+
+      const clock = await getGameClock(tx, player.id);
+      const opensAt = "opensAt" in job && typeof job.opensAt === "number" ? job.opensAt : undefined;
+      const closesAt = "closesAt" in job && typeof job.closesAt === "number" ? job.closesAt : undefined;
+      if (
+        opensAt !== undefined &&
+        !isWithinOpeningWindow(clock.minuteOfDay, opensAt, job.shiftHours ?? 1, closesAt)
+      ) {
+        throw new Error(`JOB_NOT_OPEN_${opensAt}_${closesAt ?? -1}_${clock.minuteOfDay}`);
       }
 
       const pay = BigInt(job.payPerShift ?? 0);
       if (pay <= 0n) throw new Error("COMMISSION_JOB");
 
       const balanceAfter = player.walletBalance + pay;
-      const netWorthAfter = balanceAfter + player.bankBalance + player.savingsBalance + player.bondsBalance;
-      const performanceGain = Math.max(1, Math.floor((player.hustle + player.intelligence + player.connectLevel) / 30));
+      const netWorthAfter = player.totalNetWorth + pay;
+      const performanceGain = Math.max(
+        1,
+        Math.floor((player.hustle + player.intelligence + player.connectLevel) / 30),
+      );
 
       await tx.player.update({
         where: { id: player.id },
@@ -122,6 +139,9 @@ export async function POST() {
         },
       });
 
+      // shiftHours is expressed in hours; the game clock API expects minutes.
+      await advanceGameClock(tx, player.id, (job.shiftHours ?? 0) * 60, "job_shift");
+
       return {
         walletBalance: balanceAfter.toString(),
         totalNetWorth: netWorthAfter.toString(),
@@ -142,9 +162,28 @@ export async function POST() {
     if (code === "NO_JOB") return NextResponse.json({ error: "Choose a job first." }, { status: 400 });
     if (code === "JOB_NOT_FOUND") return NextResponse.json({ error: "Your current job is no longer available." }, { status: 400 });
     if (code === "COMMISSION_JOB") return NextResponse.json({ error: "This is a commission-based role. Its payout system comes in the next jobs expansion." }, { status: 400 });
-    if (code.startsWith("WORKPLACE_")) {
-      const area = code.slice("WORKPLACE_".length).replace(/_/g, " ");
-      return NextResponse.json({ error: "Travel to " + area + " before starting this shift.", requiredArea: area }, { status: 400 });
+    if (code === "HUSTLE_TOO_LOW") return NextResponse.json({ error: "Your Hustle no longer meets this job's requirements." }, { status: 400 });
+    if (code === "INTELLIGENCE_TOO_LOW") return NextResponse.json({ error: "Your Intelligence no longer meets this job's requirements." }, { status: 400 });
+    if (code === "CONNECTION_TOO_LOW") return NextResponse.json({ error: "Your Connection no longer meets this job's requirements." }, { status: 400 });
+    if (code === "VEHICLE_REQUIRED") return NextResponse.json({ error: "This job requires a vehicle. Buy or restore your vehicle before completing another shift." }, { status: 400 });
+    if (code.startsWith("WORKPLACE_AREA:")) {
+      const area = code.slice("WORKPLACE_AREA:".length);
+      return NextResponse.json({ error: `Travel to ${area} before starting this shift.`, requiredArea: area }, { status: 400 });
+    }
+    const notOpen = code.match(/^JOB_NOT_OPEN_(\d+)_(-?\d+)_(\d+)$/);
+    if (notOpen) {
+      const opensAt = Number(notOpen[1]);
+      const configuredClose = Number(notOpen[2]);
+      const closesAt = configuredClose >= 0 ? configuredClose : (opensAt + 8) % 24;
+      const currentTime = formatGameTime(Number(notOpen[3]));
+      const openingTime = `${String(opensAt).padStart(2, "0")}:00`;
+      const closingTime = `${String(closesAt).padStart(2, "0")}:00`;
+      return NextResponse.json({
+        error: `This shift runs ${openingTime}–${closingTime}. Current in-game time is ${currentTime}.`,
+        opensAt,
+        closesAt,
+        currentTime,
+      }, { status: 400 });
     }
     return NextResponse.json({ error: "Could not complete the shift." }, { status: 500 });
   }

@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { calculateTravelCost, TRANSPORT_TYPES, type TravelMode } from "@/constants/game";
+import { calculateTravelCost, JOB_WORKPLACE_AREAS, TRANSPORT_TYPES, type TravelMode } from "@/constants/game";
+import { isWithinOpeningWindow } from "@/lib/game-clock-utils";
 import BankPanel from "./bank-panel";
 import PropertyPanel from "./property-panel";
 import VehiclePanel from "./vehicle-panel";
 import WorldHome from "./world-home";
+import { useGameClock } from "./use-game-clock";
+import GameClockLabel from "./game-clock-label";
 import { Activity, ArrowRight, Banknote, Building2, Car, Compass, Fuel, Home, Map, Menu, PhoneCall, Shield, Smartphone, Sparkles, Users, Wallet, X, Zap } from "lucide-react";
 
 type Player = {
@@ -99,15 +102,20 @@ const stats = [
 ] as const;
 
 export default function GameShell({ player }: { player: Player }) {
+  const gameClock = useGameClock(1_000);
   const [currentArea, setCurrentArea] = useState(player.currentArea);
+  const [homeArea, setHomeArea] = useState(player.homeArea);
+  const [housingType, setHousingType] = useState(player.housingType);
+  const [homeSceneId, setHomeSceneId] = useState(player.background === "rich" ? "guzape_mansion_v1" : player.homeSceneId);
   const [menuOpen, setMenuOpen] = useState(false);
   const [notice, setNotice] = useState("You have entered Abuja.");
   const [view, setView] = useState("world");
   const [travelMode, setTravelMode] = useState<TravelMode>("BUS_STOP");
   const [travelling, setTravelling] = useState(false);
   const [balance, setBalance] = useState(BigInt(player.walletBalance));
+  const [bankBalance, setBankBalance] = useState(BigInt(player.bankBalance));
   const [netWorth, setNetWorth] = useState(BigInt(player.totalNetWorth));
-  const [jobs, setJobs] = useState<Array<{ title: string; category: string; location: string; payPerShift: number; shiftHours: number; minHustle?: number; minIntelligence?: number; minConnect?: number; requiresVehicle?: boolean }>>([]);
+  const [jobs, setJobs] = useState<Array<{ title: string; category: string; location: string; venue?: string; payPerShift: number; shiftHours: number; opensAt?: number; closesAt?: number; minHustle?: number; minIntelligence?: number; minConnect?: number; requiresVehicle?: boolean; careerRecord?: { shiftsWorked: number; totalEarned: string; performance: number } | null }>>([]);
   const [jobLoading, setJobLoading] = useState(false);
   const [jobNotice, setJobNotice] = useState("");
   const [activeJob, setActiveJob] = useState(player.currentJob);
@@ -118,9 +126,11 @@ export default function GameShell({ player }: { player: Player }) {
   const [happiness, setHappiness] = useState(player.happiness);
   const [aura, setAura] = useState(player.aura);
   const [connection, setConnection] = useState(player.connectLevel);
+  const [drivingSkill, setDrivingSkill] = useState(player.drivingSkill);
   const [hasVehicle, setHasVehicle] = useState(player.hasVehicle);
+  const [vehicleName, setVehicleName] = useState(player.vehicleName);
   const [vehicleFuel, setVehicleFuel] = useState(player.vehicleFuel);
-  const [worldScene, setWorldScene] = useState<"home" | "street" | "mosque">("home");
+  const [worldScene, setWorldScene] = useState<"home" | "street" | "mosque">(player.currentArea === homeArea ? "home" : "street");
   const [mapOpen, setMapOpen] = useState(false);
   const [currentPoi, setCurrentPoi] = useState<string | null>(null);
   const [journeyMessage, setJourneyMessage] = useState<string | null>(null);
@@ -128,9 +138,9 @@ export default function GameShell({ player }: { player: Player }) {
   const [phoneOpen, setPhoneOpen] = useState(false);
   const [activityBusy, setActivityBusy] = useState(false);
   const [activityToast, setActivityToast] = useState("");
-  const [selectedNpc, setSelectedNpc] = useState<{ name: string; role: string; x: number; z: number } | null>(null);
-  const [npcHistory, setNpcHistory] = useState<{ greetings: number; lastSeenAt: string } | null>(null);
-  const [savedContacts, setSavedContacts] = useState<Array<{ name: string; greetings: number; lastSeenAt: string }>>([]);
+  const [selectedNpc, setSelectedNpc] = useState<{ id: string; name: string; role: string; x: number; z: number } | null>(null);
+  const [npcHistory, setNpcHistory] = useState<{ greetings: number; lastSeenAt: string; area?: string } | null>(null);
+  const [savedContacts, setSavedContacts] = useState<Array<{ id: string; name: string; greetings: number; lastSeenAt: string; area?: string }>>([]);
   const [contactsLoading, setContactsLoading] = useState(false);
 
   useEffect(() => {
@@ -142,14 +152,16 @@ export default function GameShell({ player }: { player: Player }) {
     setNpcHistory(null);
     fetch("/api/game/social")
       .then((response) => response.ok ? response.json() : Promise.reject(new Error("Contacts unavailable")))
-      .then((data: { contacts?: Array<{ name: string; greetings: number; lastSeenAt: string }> }) => {
+      .then((data: { contacts?: Array<{ id: string; name: string; greetings: number; lastSeenAt: string; area?: string }> }) => {
         if (!active) return;
-        const contact = data.contacts?.find((item) => item.name === selectedNpc.name);
-        setNpcHistory(contact ? { greetings: contact.greetings, lastSeenAt: contact.lastSeenAt } : { greetings: 0, lastSeenAt: "" });
+        const contacts = data.contacts ?? [];
+        const contact = contacts.find((item) => item.id === selectedNpc.id)
+          ?? contacts.find((item) => item.id.startsWith("legacy:") && item.name === selectedNpc.name);
+        setNpcHistory(contact ? { greetings: contact.greetings, lastSeenAt: contact.lastSeenAt, area: contact.area } : { greetings: 0, lastSeenAt: "" });
       })
       .catch(() => { if (active) setNpcHistory({ greetings: 0, lastSeenAt: "" }); });
     return () => { active = false; };
-  }, [selectedNpc?.name]);
+  }, [selectedNpc?.id]);
 
   useEffect(() => {
     if (!phoneOpen) return;
@@ -157,7 +169,7 @@ export default function GameShell({ player }: { player: Player }) {
     setContactsLoading(true);
     fetch("/api/game/social")
       .then((response) => response.ok ? response.json() : Promise.reject(new Error("Contacts unavailable")))
-      .then((data: { contacts?: Array<{ name: string; greetings: number; lastSeenAt: string }> }) => {
+      .then((data: { contacts?: Array<{ id: string; name: string; greetings: number; lastSeenAt: string }> }) => {
         if (active) setSavedContacts(data.contacts ?? []);
       })
       .catch(() => { if (active) setSavedContacts([]); })
@@ -168,21 +180,64 @@ export default function GameShell({ player }: { player: Player }) {
   const cash = useMemo(() => Number(balance).toLocaleString(), [balance]);
   const displayedNetWorth = useMemo(() => Number(netWorth).toLocaleString(), [netWorth]);
   const currentJob = player.currentJob;
+  const careerRanks = [
+    { name: "Rookie", threshold: 0 },
+    { name: "Reliable", threshold: 5 },
+    { name: "Skilled", threshold: 15 },
+    { name: "Professional", threshold: 30 },
+    { name: "Elite", threshold: 50 },
+  ];
+  const careerRankIndex = careerRanks.reduce((highest, rank, index) =>
+    performanceScore >= rank.threshold ? index : highest, 0);
+  const careerRank = careerRanks[careerRankIndex];
+  const nextCareerRank = careerRanks[careerRankIndex + 1];
+  const careerRankProgress = nextCareerRank
+    ? Math.min(100, Math.round(((performanceScore - careerRank.threshold) / (nextCareerRank.threshold - careerRank.threshold)) * 100))
+    : 100;
+  const activeJobDetails = jobs.find((job) => job.title === activeJob);
+  const activeJobWorkplace = activeJob ? JOB_WORKPLACE_AREAS[activeJob] : undefined;
+  const activeJobShiftOpen = gameClock.loaded && (activeJobDetails?.opensAt === undefined
+    || isWithinOpeningWindow(gameClock.minuteOfDay, activeJobDetails.opensAt, activeJobDetails.shiftHours, activeJobDetails.closesAt));
+  const activeJobRequirementsMet = Boolean(activeJobDetails
+    && player.hustle >= (activeJobDetails.minHustle ?? 0)
+    && player.intelligence >= (activeJobDetails.minIntelligence ?? 0)
+    && connection >= (activeJobDetails.minConnect ?? 0)
+    && (!activeJobDetails.requiresVehicle || hasVehicle));
+  const canCompleteActiveShift = Boolean(activeJobDetails
+    && activeJobDetails.payPerShift > 0
+    && activeJobRequirementsMet
+    && activeJobShiftOpen
+    && (!activeJobWorkplace || currentArea === activeJobWorkplace));
+  const currentStats: Record<(typeof stats)[number][1], number> = {
+    aura,
+    steez: player.steez,
+    composure: player.composure,
+    hustle: player.hustle,
+    intelligence: player.intelligence,
+    drivingSkill,
+    streetSense: player.streetSense,
+    connectLevel: connection,
+  };
+
+  async function refreshGameClock() {
+    await gameClock.refresh();
+  }
 
   function openView(nextView: string) {
     setView(nextView);
+    if (nextView !== "world") setSelectedNpc(null);
     if (nextView === "jobs") void loadJobs();
   }
 
-  async function loadJobs() {
+  async function loadJobs(preserveNotice = false) {
     setJobLoading(true);
     try {
       const response = await fetch("/api/game/jobs");
       const data = await response.json();
       if (response.ok) setJobs(data.jobs ?? []);
-      else setJobNotice(data.error ?? "Could not load jobs.");
+      else if (!preserveNotice) setJobNotice(data.error ?? "Could not load jobs.");
     } catch {
-      setJobNotice("Could not connect to the jobs board.");
+      if (!preserveNotice) setJobNotice("Could not connect to the jobs board.");
     } finally {
       setJobLoading(false);
     }
@@ -219,8 +274,11 @@ export default function GameShell({ player }: { player: Player }) {
         setShiftsCompleted(data.shiftsCompleted);
         setPerformanceScore(data.performanceScore);
         setJobNotice(`${data.message} Career performance +${data.performanceGain}.`);
+        void refreshGameClock();
+        await loadJobs(true);
       } else {
         setJobNotice(data.error ?? "Could not complete shift.");
+        if (data.requiredArea) setJobNotice(data.error + " Use the Map to travel there, then return to Jobs.");
       }
     } catch {
       setJobNotice("Could not connect to the jobs system.");
@@ -231,6 +289,7 @@ export default function GameShell({ player }: { player: Player }) {
 
   async function travel(area: string, pointOfInterest?: string) {
     if ((area === currentArea && !pointOfInterest) || travelling) return;
+    setSelectedNpc(null);
     setTravelling(true);
     const destinationLabel = pointOfInterest ?? area;
     setNotice(`Planning your trip to ${destinationLabel}...`);
@@ -268,10 +327,12 @@ export default function GameShell({ player }: { player: Player }) {
       // Keep the route transition short and visible instead of switching scenes instantly.
       await new Promise<void>((resolve) => window.setTimeout(resolve, 1350));
       setCurrentArea(data.currentArea);
+      void refreshGameClock();
       setBalance(BigInt(data.walletBalance));
       setNetWorth(BigInt(data.totalNetWorth));
       if (typeof data.fitness === "number") setFitness(data.fitness);
       if (typeof data.happiness === "number") setHappiness(data.happiness);
+      if (typeof data.drivingSkill === "number") setDrivingSkill(data.drivingSkill);
       if (typeof data.vehicleFuel === "number") setVehicleFuel(data.vehicleFuel);
       const arrivalMessage = travelMode === "TREK"
         ? `You trekked to ${destinationLabel}. +₦${Number(data.reward ?? 0).toLocaleString()} Game Naira · Fitness +2.`
@@ -293,20 +354,44 @@ export default function GameShell({ player }: { player: Player }) {
     }
   }
 
-  async function performActivity(activity: "walk" | "dance" | "eat" | "call_mummy" | "greet_neighbour" | "pray_salah" | "perform_wudu" | "read_quran" | "give_sadaqah", targetName?: string) {
-    if (activityBusy) return;
+  async function sleepAtHome() {
+    if (activityBusy || !gameClock.isNight || worldScene !== "home" || currentArea !== homeArea) return;
+    setActivityBusy(true);
+    setActivityToast("");
+    try {
+      const response = await fetch("/api/game/sleep", { method: "POST" });
+      const data = await response.json();
+      if (!response.ok) {
+        setActivityToast(data.error ?? "You could not rest right now.");
+        return;
+      }
+      setHealth(data.health);
+      setFitness(data.fitness);
+      setHappiness(data.happiness);
+      setActivityToast(data.message);
+      setNotice(data.message);
+      await refreshGameClock();
+    } catch {
+      setActivityToast("Could not connect to the rest service.");
+    } finally {
+      setActivityBusy(false);
+    }
+  }
+
+  async function performActivity(activity: "walk" | "dance" | "eat" | "call_mummy" | "greet_neighbour" | "pray_salah" | "perform_wudu" | "read_quran" | "give_sadaqah", targetName?: string, targetId?: string): Promise<boolean> {
+    if (activityBusy) return false;
     setActivityBusy(true);
     setActivityToast("");
     try {
       const response = await fetch("/api/game/activity", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ activity, ...(targetName ? { targetName } : {}) }),
+        body: JSON.stringify({ activity, ...(targetName ? { targetName } : {}), ...(targetId ? { targetId } : {}) }),
       });
       const data = await response.json();
       if (!response.ok) {
         setActivityToast(data.error ?? "That activity could not be completed.");
-        return;
+        return false;
       }
       setBalance(BigInt(data.walletBalance));
       setNetWorth(BigInt(data.totalNetWorth));
@@ -315,13 +400,16 @@ export default function GameShell({ player }: { player: Player }) {
       setHappiness(data.happiness);
       setAura(data.aura);
       setConnection(data.connectLevel);
+      void refreshGameClock();
       const rewardText = data.reward > 0 ? ` +₦${Number(data.reward).toLocaleString()} Game Naira.` : "";
       const costText = data.cost > 0 ? ` −₦${Number(data.cost).toLocaleString()}.` : "";
       const message = `${data.message}${rewardText}${costText}`;
       setActivityToast(message);
       setNotice(message);
+      return true;
     } catch {
       setActivityToast("Could not connect to the activities service.");
+      return false;
     } finally {
       setActivityBusy(false);
     }
@@ -333,11 +421,12 @@ export default function GameShell({ player }: { player: Player }) {
         <div className="absolute inset-0">
           <WorldHome
             key={`${worldScene}:${currentArea}`}
-            sceneId={player.background === "rich" ? "guzape_mansion_v1" : player.homeSceneId}
+            sceneId={homeSceneId}
             look={{ gender: player.gender, skinTone: player.skinTone, hairstyle: player.hairstyle, hairColor: player.hairColor, outfitTop: player.outfitTop, outfitBottom: player.outfitBottom, outfitShoes: player.outfitShoes, heightCm: player.heightCm, background: player.background }}
             immersive
             worldScene={worldScene}
             area={currentArea}
+            timeOfDayMinutes={gameClock.minuteOfDay}
             onNpcSelect={(npc) => { setSelectedNpc(npc); setMapOpen(false); }}
           />
         </div>
@@ -346,7 +435,7 @@ export default function GameShell({ player }: { player: Player }) {
           <div className="pointer-events-auto max-w-[55vw] rounded-2xl border border-white/15 bg-slate-950/80 px-3 py-2.5 text-white shadow-2xl backdrop-blur-xl sm:max-w-sm sm:px-4">
             <p className="text-[9px] font-black uppercase tracking-[0.22em] text-emerald-300">ABUJA LIFE <span className="text-white/40">/ LIVE WORLD</span></p>
             <p className="mt-0.5 truncate text-sm font-black sm:text-base">{currentPoi ?? currentArea}</p>
-            <p className="mt-0.5 text-[10px] text-slate-300">{worldScene === "home" ? "Home" : worldScene === "mosque" ? "Mosque courtyard" : "Abuja, FCT"} · {travelling ? "On the move…" : "Free roam"}</p>
+            <p className="mt-0.5 text-[10px] text-slate-300">{worldScene === "home" ? "Home" : worldScene === "mosque" ? "Mosque courtyard" : "Abuja, FCT"} · <GameClockLabel dayNumber={gameClock.dayNumber} time={gameClock.time} period={gameClock.period} /> · {travelling ? "On the move…" : "Free roam"}</p>
           </div>
           <div className="pointer-events-auto flex max-w-[72vw] items-center gap-2 rounded-2xl border border-white/15 bg-slate-950/80 px-2.5 py-2 text-white shadow-2xl backdrop-blur-xl sm:gap-4 sm:px-4">
             <div><p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Mood</p><p className="text-xs font-black text-emerald-300 sm:text-sm">{happiness >= 80 ? "Very Happy" : happiness >= 55 ? "Good" : "Low"}</p></div>
@@ -363,6 +452,10 @@ export default function GameShell({ player }: { player: Player }) {
             <span className="block text-xs font-black">Eat something</span>
             <span className="mt-1 block text-[11px] text-slate-300">Meal costs ₦180 · restores health</span>
           </button>
+          {worldScene === "home" && <button onClick={() => void sleepAtHome()} disabled={activityBusy || !gameClock.isNight || currentArea !== homeArea} className="rounded-2xl border border-amber-200/30 bg-slate-950/80 p-3 text-left text-white shadow-xl backdrop-blur transition hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-55">
+            <span className="block text-xs font-black">{gameClock.isNight ? "Sleep until 06:00" : "Rest after dark"}</span>
+            <span className="mt-1 block text-[11px] text-slate-300">{gameClock.isNight ? "Rest at home and wake up in the morning" : "Sleep becomes available at night"}</span>
+          </button>}
           <div className="rounded-2xl border border-white/15 bg-slate-950/75 p-3 text-white shadow-xl backdrop-blur">
             <div className="mb-2 flex items-center justify-between text-[11px] font-bold text-slate-200"><span>Health</span><span>{health}/100</span></div>
             <div className="h-1.5 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-rose-500 transition-all" style={{ width: `${health}%` }} /></div>
@@ -386,14 +479,14 @@ export default function GameShell({ player }: { player: Player }) {
             } else if (worldScene === "mosque") {
               setWorldScene("street");
               setCurrentPoi(null);
-            } else if (currentArea === player.homeArea) {
+            } else if (currentArea === homeArea) {
               setWorldScene("home");
               setCurrentPoi(null);
             } else {
               setMapOpen(true);
             }
           }} className="rounded-xl border border-amber-300/40 bg-amber-300 px-3 py-2.5 text-xs font-black text-slate-950 shadow-xl transition hover:bg-amber-200">
-            {worldScene === "home" ? "Step outside →" : worldScene === "mosque" ? "← Return to street" : currentArea === player.homeArea ? "← Enter home" : "Choose destination"}
+            {worldScene === "home" ? "Step outside →" : worldScene === "mosque" ? "← Return to street" : currentArea === homeArea ? "← Enter home" : "Choose destination"}
           </button>
         </div>
 
@@ -420,12 +513,12 @@ export default function GameShell({ player }: { player: Player }) {
             </div>
             <p className="mt-3 rounded-xl bg-white/5 p-3 text-xs leading-5 text-slate-200">“{selectedNpc.role === "Shop owner" ? "Welcome. If you need provisions, there are a few good shops around here." : selectedNpc.role === "University student" ? "I'm trying to balance classes and life in Abuja. Have you explored the area yet?" : selectedNpc.role === "Neighbour" ? "This neighbourhood has its own rhythm. You will get to know familiar faces soon." : selectedNpc.role === "Ride-hailing driver" ? "Traffic changes quickly around Abuja. Plan your trip before the rush gets worse." : selectedNpc.role === "Office worker" ? "The workday moves fast here. I try to find time to enjoy the city too." : selectedNpc.role === "Local trader" ? "Business is all about knowing people and showing up consistently." : selectedNpc.role === "Creative freelancer" ? "There are always new ideas and people to meet around the city." : selectedNpc.role === "Community volunteer" ? "A good neighbourhood starts when people look out for each other." : "It is good to see you. May your day go well."}”</p>
             <div className="mt-3 grid grid-cols-2 gap-2">
-              <button onClick={() => { void performActivity("greet_neighbour", selectedNpc.name); setSelectedNpc(null); }} disabled={activityBusy} className="rounded-xl bg-emerald-400 px-3 py-2.5 text-xs font-black text-slate-950 transition hover:bg-emerald-300 disabled:opacity-50">{activityBusy ? "Saving…" : "Say hello"}</button>
+              <button onClick={async () => { const saved = await performActivity("greet_neighbour", selectedNpc.name, selectedNpc.id); if (saved) setSelectedNpc(null); }} disabled={activityBusy} className="rounded-xl bg-emerald-400 px-3 py-2.5 text-xs font-black text-slate-950 transition hover:bg-emerald-300 disabled:opacity-50">{activityBusy ? "Saving…" : "Say hello"}</button>
               <button onClick={() => { setNotice(`${selectedNpc.name}: “${currentArea} has its own rhythm. Take your time and get to know the area.”`); setSelectedNpc(null); }} className="rounded-xl border border-white/15 bg-white/10 px-3 py-2.5 text-xs font-bold text-white transition hover:bg-white/15">Ask about the area</button>
             </div>
             <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
               <div><p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Relationship</p><p className="mt-0.5 text-xs font-black text-amber-200">{npcHistory === null ? "Checking history…" : npcHistory.greetings === 0 ? "New face" : npcHistory.greetings < 3 ? "Familiar face" : "Known neighbour"}</p></div>
-              <p className="text-right text-[10px] text-slate-400">{npcHistory && npcHistory.greetings > 0 ? `${npcHistory.greetings} saved greeting${npcHistory.greetings === 1 ? "" : "s"}` : "Start building trust"}</p>
+              <div className="text-right"><p className="text-[10px] text-slate-400">{npcHistory && npcHistory.greetings > 0 ? `${npcHistory.greetings} saved greeting${npcHistory.greetings === 1 ? "" : "s"}` : "Start building trust"}</p>{npcHistory?.area && <p className="mt-1 text-[10px] text-emerald-300">Last met in {npcHistory.area}</p>}</div>
             </div>
             <p className="mt-2 text-[10px] text-slate-500">Your greetings are saved, so familiar residents stay familiar when you return.</p>
           </section>
@@ -510,7 +603,7 @@ export default function GameShell({ player }: { player: Player }) {
         </div>}
 
         <nav aria-label="Life simulator controls" className="absolute bottom-3 left-1/2 z-30 flex max-w-[calc(100vw-20px)] -translate-x-1/2 items-center gap-1 rounded-[22px] border border-white/15 bg-slate-950/90 p-1.5 text-white shadow-2xl backdrop-blur-xl sm:bottom-5 sm:gap-2 sm:p-2">
-          <button onClick={() => { setWorldScene(currentArea === player.homeArea ? "home" : "street"); setCurrentPoi(null); setMapOpen(false); setActivityOpen(false); setPhoneOpen(false); }} className="flex min-w-[61px] flex-col items-center gap-1 rounded-2xl bg-emerald-400 px-3 py-2 text-slate-950 transition hover:bg-emerald-300 sm:min-w-[76px] sm:px-4"><Home size={18} /><span className="text-[10px] font-black">World</span></button>
+          <button onClick={() => { setWorldScene(currentArea === homeArea ? "home" : "street"); setCurrentPoi(null); setMapOpen(false); setActivityOpen(false); setPhoneOpen(false); }} className="flex min-w-[61px] flex-col items-center gap-1 rounded-2xl bg-emerald-400 px-3 py-2 text-slate-950 transition hover:bg-emerald-300 sm:min-w-[76px] sm:px-4"><Home size={18} /><span className="text-[10px] font-black">World</span></button>
           <button onClick={() => { setActivityOpen(false); setPhoneOpen(false); setMapOpen(true); }} className="flex min-w-[61px] flex-col items-center gap-1 rounded-2xl px-3 py-2 text-slate-300 transition hover:bg-white/10 hover:text-white sm:min-w-[76px] sm:px-4"><Map size={18} /><span className="text-[10px] font-bold">Map</span></button>
           <button onClick={() => { setPhoneOpen(true); setActivityOpen(false); }} className="flex min-w-[61px] flex-col items-center gap-1 rounded-2xl px-3 py-2 text-slate-300 transition hover:bg-white/10 hover:text-white sm:min-w-[76px] sm:px-4"><Smartphone size={18} /><span className="text-[10px] font-bold">Phone</span></button>
           <button onClick={() => { setActivityOpen(true); setPhoneOpen(false); }} className="flex min-w-[61px] flex-col items-center gap-1 rounded-2xl px-3 py-2 text-slate-300 transition hover:bg-white/10 hover:text-white sm:min-w-[76px] sm:px-4"><Activity size={18} /><span className="text-[10px] font-bold">Activities</span></button>
@@ -548,7 +641,7 @@ export default function GameShell({ player }: { player: Player }) {
         <section className="min-w-0">
           {notice && <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800">{notice}</div>}
 
-          {view === "world" && <WorldHome sceneId={player.background === "rich" ? "guzape_mansion_v1" : player.homeSceneId} look={{ gender: player.gender, skinTone: player.skinTone, hairstyle: player.hairstyle, hairColor: player.hairColor, outfitTop: player.outfitTop, outfitBottom: player.outfitBottom, outfitShoes: player.outfitShoes, heightCm: player.heightCm, background: player.background }} />}
+          {view === "world" && <WorldHome sceneId={homeSceneId} look={{ gender: player.gender, skinTone: player.skinTone, hairstyle: player.hairstyle, hairColor: player.hairColor, outfitTop: player.outfitTop, outfitBottom: player.outfitBottom, outfitShoes: player.outfitShoes, heightCm: player.heightCm, background: player.background }} timeOfDayMinutes={gameClock.minuteOfDay} />}
 
           {view === "map" && <div className="space-y-5">
             <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-7">
@@ -573,22 +666,69 @@ export default function GameShell({ player }: { player: Player }) {
           {view === "jobs" && <div className="space-y-5">
             <div className="rounded-3xl border border-slate-200 bg-white p-7">
               <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-                <div><p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Abuja Jobs Board</p><h1 className="mt-2 text-3xl font-black">Find your hustle.</h1><p className="mt-2 text-sm text-slate-500">Jobs use your skills, location, vehicle status and Connection.</p></div>
-                <button onClick={loadJobs} disabled={jobLoading} className="rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white">{jobLoading ? "Loading..." : "Refresh jobs"}</button>
+                <div><p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Abuja Jobs Board</p><h1 className="mt-2 text-3xl font-black">Find your hustle.</h1><p className="mt-2 text-sm text-slate-500">Jobs use your skills, workplace, vehicle status and the in-game clock.</p><p className="mt-2 text-xs font-bold text-slate-600">Day {gameClock.dayNumber} · {gameClock.time} · {gameClock.period}</p></div>
+                <button onClick={() => void loadJobs()} disabled={jobLoading} className="rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white">{jobLoading ? "Loading..." : "Refresh jobs"}</button>
               </div>
               <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <div className="rounded-2xl bg-slate-950 p-4 text-white"><p className="text-[10px] font-bold uppercase tracking-wider text-blue-300">Shifts completed</p><p className="mt-1 text-2xl font-black">{shiftsCompleted}</p></div>
-                <div className="rounded-2xl bg-emerald-50 p-4 text-emerald-950"><p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Career performance</p><p className="mt-1 text-2xl font-black">{performanceScore}</p></div>
+                <div className="rounded-2xl bg-emerald-50 p-4 text-emerald-950"><div className="flex items-start justify-between gap-2"><div><p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Career performance</p><p className="mt-1 text-2xl font-black">{performanceScore}</p></div><span className="rounded-full bg-white/80 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-800">{careerRank.name}</span></div><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-emerald-200" role="progressbar" aria-label="Progress to next career rank" aria-valuemin={0} aria-valuemax={100} aria-valuenow={careerRankProgress}><div className="h-full rounded-full bg-emerald-700 transition-all" style={{ width: `${careerRankProgress}%` }} /></div><p className="mt-2 text-[10px] font-semibold text-emerald-800">{nextCareerRank ? `${nextCareerRank.threshold - performanceScore} points to ${nextCareerRank.name}` : "Highest career rank reached"}</p></div>
                 <div className="col-span-2 rounded-2xl border border-slate-200 p-4 sm:col-span-1"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Career tip</p><p className="mt-1 text-xs leading-5 text-slate-600">Each completed shift adds to your work record and improves your performance score.</p></div>
               </div>
               {jobNotice && <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800">{jobNotice}</div>}
               <div className="mt-6 grid gap-3 md:grid-cols-2">
-                {jobs.map((job) => <div key={job.title} className="rounded-2xl border border-slate-200 p-5">
-                  <div className="flex items-start justify-between gap-3"><div><p className="font-black">{job.title}</p><p className="mt-1 text-xs font-semibold text-slate-500">{job.location} · {job.shiftHours}h shift</p></div><span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold uppercase text-emerald-700">{job.category}</span></div>
-                  <p className="mt-4 text-xl font-black">₦{job.payPerShift.toLocaleString()} <span className="text-xs font-semibold text-slate-400">/ shift</span></p>
+                {jobs.map((job) => {
+                  const workplace = JOB_WORKPLACE_AREAS[job.title];
+                  const hasRequirements = player.hustle >= (job.minHustle ?? 0)
+                    && player.intelligence >= (job.minIntelligence ?? 0)
+                    && connection >= (job.minConnect ?? 0)
+                    && (!job.requiresVehicle || hasVehicle);
+                  const shiftOpen = gameClock.loaded && (job.opensAt === undefined
+                    || isWithinOpeningWindow(gameClock.minuteOfDay, job.opensAt, job.shiftHours, job.closesAt));
+                  const shiftStatus = !gameClock.loaded
+                    ? "Syncing in-game time…"
+                    : job.payPerShift <= 0
+                      ? "Commission payouts are coming soon"
+                      : !hasRequirements
+                        ? "Requirements not met"
+                        : !shiftOpen
+                          ? "Off shift · now " + gameClock.time
+                          : workplace && currentArea !== workplace
+                            ? "Travel to " + workplace
+                            : activeJob === job.title
+                              ? "Ready for this shift"
+                              : "Eligible to apply";
+                  const statusStyle = !gameClock.loaded
+                    ? "bg-slate-100 text-slate-500"
+                    : job.payPerShift <= 0
+                      ? "bg-slate-100 text-slate-500"
+                      : !hasRequirements
+                        ? "bg-rose-50 text-rose-700"
+                        : !shiftOpen
+                          ? "bg-amber-50 text-amber-800"
+                          : workplace && currentArea !== workplace
+                            ? "bg-blue-50 text-blue-700"
+                            : "bg-emerald-50 text-emerald-700";
+                  const closingHour = job.closesAt ?? (job.opensAt === undefined ? undefined : job.opensAt + Math.max(job.shiftHours, 8));
+                  const formatHour = (hour: number) => hour === 24 ? "24:00" : String(((hour % 24) + 24) % 24).padStart(2, "0") + ":00";
+                  return <div key={job.title} className="rounded-2xl border border-slate-200 p-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-black">{job.title}</p>
+                        <p className="mt-1 text-xs font-semibold text-slate-500">
+                          {job.location}{job.venue && job.venue !== job.location ? " · " + job.venue : ""} · {job.payPerShift <= 0 ? "Commission-based role" : `${job.shiftHours}h shift`}{job.opensAt !== undefined
+                            ? " · " + (job.opensAt >= 19 || (job.closesAt !== undefined && job.closesAt < job.opensAt) ? "Night hours" : "Hours") + " " + formatHour(job.opensAt) + "–" + formatHour(closingHour ?? job.opensAt)
+                            : " · Flexible hours"}
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase text-slate-700">{job.category}</span>
+                    </div>
+                  <p className="mt-4 text-xl font-black">{job.payPerShift <= 0 ? "Commission-based" : <>₦{job.payPerShift.toLocaleString()} <span className="text-xs font-semibold text-slate-400">/ shift</span></>}</p>
                   <p className="mt-2 text-xs text-slate-500">Requirements: Hustle {job.minHustle ?? 0} · Intelligence {job.minIntelligence ?? 0} · Connection {job.minConnect ?? 0}{job.requiresVehicle ? " · Vehicle" : ""}</p>
-                  <button onClick={() => applyForJob(job.title)} disabled={jobLoading} className="mt-4 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold hover:bg-slate-50">Apply</button>
-                </div>)}
+                  {job.careerRecord && <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">Your record: {job.careerRecord.shiftsWorked} shift{job.careerRecord.shiftsWorked === 1 ? "" : "s"} · ₦{Number(job.careerRecord.totalEarned).toLocaleString()} earned · +{job.careerRecord.performance} performance</p>}
+                  <p className={"mt-3 rounded-lg px-3 py-2 text-xs font-bold " + statusStyle} aria-live="polite">{shiftStatus}</p>
+                  <button onClick={() => applyForJob(job.title)} disabled={jobLoading || activeJob === job.title || job.payPerShift <= 0 || !hasRequirements} className="mt-4 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">{jobLoading ? "Processing..." : job.payPerShift <= 0 ? "Coming soon" : activeJob === job.title ? "Current job" : !hasRequirements ? "Requirements not met" : "Apply"}</button>
+                  </div>;
+                })}
               </div>
               {!jobs.length && <p className="mt-6 text-sm text-slate-500">Select Jobs and refresh the board to load available work.</p>}
             </div>
@@ -596,21 +736,34 @@ export default function GameShell({ player }: { player: Player }) {
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-300">Current Job</p>
               <h2 className="mt-2 text-2xl font-black">{activeJob}</h2>
               <p className="mt-2 text-sm text-slate-400">Complete a shift to earn Game Naira and build your employment history.</p>
-              <button onClick={completeShift} disabled={jobLoading} className="mt-5 rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white">{jobLoading ? "Processing..." : "Complete Shift"}</button>
+              {activeJobDetails?.payPerShift === 0 && <p className="mt-3 rounded-xl bg-white/10 px-4 py-3 text-sm font-semibold text-slate-300">This commission-based role is listed, but commission payouts are not available yet.</p>}
+              {JOB_WORKPLACE_AREAS[activeJob] && <p className="mt-3 rounded-xl bg-white/10 px-4 py-3 text-sm font-semibold text-slate-200">Workplace: {JOB_WORKPLACE_AREAS[activeJob]}{currentArea === JOB_WORKPLACE_AREAS[activeJob] ? " · You are here" : " · You are currently in " + currentArea}</p>}
+              <button onClick={completeShift} disabled={jobLoading || !canCompleteActiveShift} className="mt-5 rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-50">{jobLoading ? "Processing..." : !gameClock.loaded ? "Syncing clock…" : activeJobDetails?.payPerShift === 0 ? "Payout coming soon" : !activeJobDetails ? "Loading job…" : !activeJobRequirementsMet ? "Requirements not met" : !activeJobShiftOpen ? "Off shift · try later" : activeJobWorkplace && currentArea !== activeJobWorkplace ? `Travel to ${activeJobWorkplace}` : "Complete Shift"}</button>
             </div>}
           </div>}
-          {view === "vehicles" && <VehiclePanel onUpdate={(data) => { setBalance(BigInt(data.walletBalance)); setNetWorth(BigInt(data.totalNetWorth)); setNotice(data.message); if (data.vehicle) { setHasVehicle(true); if (typeof data.vehicle.fuel === "number") setVehicleFuel(data.vehicle.fuel); } if (typeof data.vehicleFuel === "number") setVehicleFuel(data.vehicleFuel); }} />}\n          {view === "bank" && <BankPanel onUpdate={(b, message) => { setBalance(BigInt(b.walletBalance)); setNetWorth(BigInt(b.totalNetWorth)); setNotice(message); }} />}
-          {view === "property" && <PropertyPanel onUpdate={(data) => { setBalance(BigInt(data.walletBalance)); setNetWorth(BigInt(data.netWorth)); setCurrentArea(data.housing.currentArea); setNotice(data.message); }} />}
+          {view === "vehicles" && <VehiclePanel onUpdate={(data) => { setBalance(BigInt(data.walletBalance)); setNetWorth(BigInt(data.totalNetWorth)); setNotice(data.message); if (data.vehicle) { setHasVehicle(true); if (typeof data.vehicle.name === "string") setVehicleName(data.vehicle.name); if (typeof data.vehicle.fuel === "number") setVehicleFuel(data.vehicle.fuel); } if (typeof data.vehicleFuel === "number") setVehicleFuel(data.vehicleFuel); if (typeof data.drivingSkill === "number") setDrivingSkill(data.drivingSkill); }} />}
+          {view === "bank" && <BankPanel onUpdate={(b, message) => { setBalance(BigInt(b.walletBalance)); setBankBalance(BigInt(b.bankBalance)); setNetWorth(BigInt(b.totalNetWorth)); setNotice(message); }} />}
+          {view === "property" && <PropertyPanel onUpdate={(data) => {
+            setBalance(BigInt(data.walletBalance));
+            setNetWorth(BigInt(data.netWorth));
+            setCurrentArea(data.housing.currentArea);
+            setHomeArea(data.housing.homeArea);
+            setHousingType(data.housing.housingType);
+            if (typeof data.housing.homeSceneId === "string") setHomeSceneId(data.housing.homeSceneId);
+            setWorldScene("home");
+            setCurrentPoi(null);
+            setNotice(data.message);
+          }} />}
           {view !== "world" && view !== "map" && view !== "jobs" && view !== "property" && view !== "bank" && view !== "vehicles" && <div className="rounded-3xl border border-slate-200 bg-white p-7"><p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">{view}</p><h1 className="mt-2 text-3xl font-black capitalize">{view} is coming into the playable economy.</h1><p className="mt-4 max-w-2xl leading-7 text-slate-600">The dashboard shell is ready. This section will be connected to its server-authoritative game actions in the next build stages.</p></div>}
         </section>
 
         <aside className="space-y-5">
           <div className="rounded-2xl border border-slate-200 bg-white p-5">
             <div className="flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-wider text-slate-400">Player</p><p className="mt-1 text-xl font-black">{player.displayName}</p></div><div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 font-black text-emerald-700">{player.displayName.slice(0,1).toUpperCase()}</div></div>
-            <div className="mt-5 grid grid-cols-2 gap-2">{stats.map(([label,key]) => <div key={label} className="rounded-xl bg-slate-50 p-3"><p className="text-[10px] font-bold uppercase text-slate-400">{label}</p><p className="mt-1 text-lg font-black">{player[key]}</p></div>)}</div>
+            <div className="mt-5 grid grid-cols-2 gap-2">{stats.map(([label,key]) => <div key={label} className="rounded-xl bg-slate-50 p-3"><p className="text-[10px] font-bold uppercase text-slate-400">{label}</p><p className="mt-1 text-lg font-black">{currentStats[key]}</p></div>)}</div>
           </div>
-          <div className="rounded-2xl bg-slate-950 p-5 text-white"><div className="flex items-center gap-2 text-blue-300"><Wallet size={18} /><span className="text-xs font-bold uppercase tracking-wider">Financial snapshot</span></div><p className="mt-4 text-3xl font-black">₦{cash}</p><div className="mt-4 grid grid-cols-2 gap-2 text-xs"><div className="rounded-xl bg-white/5 p-3"><p className="text-slate-400">Bank</p><p className="mt-1 font-bold">₦{Number(player.bankBalance).toLocaleString()}</p></div><div className="rounded-xl bg-white/5 p-3"><p className="text-slate-400">Net worth</p><p className="mt-1 font-bold">₦{displayedNetWorth}</p></div></div></div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5"><div className="flex items-center gap-2"><Home size={17} className="text-emerald-600" /><span className="font-bold">Home</span></div><p className="mt-3 text-lg font-black">{player.homeArea}</p><p className="text-sm text-slate-500">{player.housingType}</p><div className="mt-4 flex items-center gap-2 text-xs font-semibold text-slate-500"><Car size={14} /> {player.hasVehicle ? player.vehicleName ?? "Vehicle owned" : "No vehicle yet"}</div></div>
+          <div className="rounded-2xl bg-slate-950 p-5 text-white"><div className="flex items-center gap-2 text-blue-300"><Wallet size={18} /><span className="text-xs font-bold uppercase tracking-wider">Financial snapshot</span></div><p className="mt-4 text-3xl font-black">₦{cash}</p><div className="mt-4 grid grid-cols-2 gap-2 text-xs"><div className="rounded-xl bg-white/5 p-3"><p className="text-slate-400">Bank</p><p className="mt-1 font-bold">₦{Number(bankBalance).toLocaleString()}</p></div><div className="rounded-xl bg-white/5 p-3"><p className="text-slate-400">Net worth</p><p className="mt-1 font-bold">₦{displayedNetWorth}</p></div></div></div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-5"><div className="flex items-center gap-2"><Home size={17} className="text-emerald-600" /><span className="font-bold">Home</span></div><p className="mt-3 text-lg font-black">{homeArea}</p><p className="text-sm text-slate-500">{housingType}</p><div className="mt-4 flex items-center gap-2 text-xs font-semibold text-slate-500"><Car size={14} /> {hasVehicle ? vehicleName ?? "Vehicle owned" : "No vehicle yet"}</div></div>
         </aside>
       </div>
 
@@ -629,7 +782,7 @@ export default function GameShell({ player }: { player: Player }) {
           </div>
           <div className="mt-5">
             <div className="flex items-center justify-between"><h3 className="text-sm font-black">Contacts</h3><span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{savedContacts.length} saved</span></div>
-            {contactsLoading ? <p className="mt-3 rounded-xl bg-slate-50 p-3 text-xs text-slate-500">Loading your connections…</p> : savedContacts.length ? <div className="mt-2 max-h-44 space-y-2 overflow-y-auto">{savedContacts.map((contact) => <div key={contact.name} className="flex items-center gap-3 rounded-2xl border border-slate-100 p-3"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-black text-emerald-800">{contact.name.split(/\s+/).map((part) => part[0]).slice(0, 2).join("")}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{contact.name}</p><p className="text-[11px] text-slate-500">{contact.greetings >= 5 ? "Known neighbour" : contact.greetings >= 2 ? "Familiar face" : "New face"} · {contact.greetings} {contact.greetings === 1 ? "greeting" : "greetings"}</p></div><span className="text-[10px] text-slate-400">{new Date(contact.lastSeenAt).toLocaleDateString()}</span></div>)}</div> : <p className="mt-2 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-500">Your contacts will appear here as you greet residents around Abuja.</p>}
+            {contactsLoading ? <p className="mt-3 rounded-xl bg-slate-50 p-3 text-xs text-slate-500">Loading your connections…</p> : savedContacts.length ? <div className="mt-2 max-h-44 space-y-2 overflow-y-auto">{savedContacts.map((contact) => <div key={contact.id} className="flex items-center gap-3 rounded-2xl border border-slate-100 p-3"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-black text-emerald-800">{contact.name.split(/\s+/).map((part) => part[0]).slice(0, 2).join("")}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{contact.name}</p><p className="text-[11px] text-slate-500">{contact.area ? `${contact.area} · ` : ""}{contact.greetings >= 5 ? "Known neighbour" : contact.greetings >= 2 ? "Familiar face" : "New face"} · {contact.greetings} {contact.greetings === 1 ? "greeting" : "greetings"}</p></div><span className="text-[10px] text-slate-400">{new Date(contact.lastSeenAt).toLocaleDateString()}</span></div>)}</div> : <p className="mt-2 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-500">Your contacts will appear here as you greet residents around Abuja.</p>}
           </div>
           {activityToast && <p role="status" className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">{activityToast}</p>}
           <p className="mt-4 text-xs leading-5 text-slate-500">Calls and contacts are in-game only. Your contacts are saved from your interaction history.</p>
