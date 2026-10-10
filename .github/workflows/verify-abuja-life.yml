@@ -3,6 +3,8 @@ name: Verify Abuja Life
 on:
   push:
     branches:
+      - develop
+      - main
       - feature/persistent-world-foundation
   pull_request:
     branches:
