@@ -1,4 +1,4 @@
-﻿// Abuja Life - Database Schema
+// Abuja Life - Database Schema
 
 generator client {
   provider = "prisma-client-js"
@@ -6,7 +6,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model Player {
@@ -17,6 +16,19 @@ model Player {
   passwordHash     String
   gender           String
   avatarUrl        String?
+  // Persistent character identity: scene assets resolve from these stable preset keys.
+  characterPresetId String   @default("nigerian_young_adult_v1")
+  skinTone          String   @default("deep_brown")
+  hairstyle         String   @default("low_cut")
+  hairColor         String   @default("black")
+  bodyType          String   @default("average")
+  heightCm          Int      @default(170)
+  appearanceSeed    Int      @default(1)
+  outfitTop         String   @default("plain_tee_cream_v1")
+  outfitBottom      String   @default("jeans_dark_v1")
+  outfitShoes       String   @default("sneakers_black_v1")
+  outfitOuterwear   String   @default("none")
+  homeSceneId       String   @default("nyanya_shared_room_v1")
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   background       String   @default("poor")
@@ -30,6 +42,7 @@ model Player {
   streetSense      Int      @default(10)
   connectLevel     Int      @default(0)
   health           Int      @default(100)
+  fitness          Int      @default(50)
   happiness        Int      @default(70)
   walletBalance    BigInt   @default(0)
   bankBalance      BigInt   @default(0)
@@ -47,6 +60,9 @@ model Player {
   hasVehicle       Boolean  @default(false)
   vehicleType      String?
   vehicleName      String?
+  vehicleFuel      Int      @default(100)
+  vehicleCondition Int      @default(100)
+  vehicleValue     BigInt   @default(0)
   hasBypass        Boolean  @default(false)
   bypassRiskLevel  Int      @default(0)
   aedcUnits        Int      @default(0)
@@ -63,6 +79,7 @@ model Player {
   properties       Property[]
   jobHistory       JobHistory[]
   notifications    Notification[]
+  gameActivities   GameActivity[]
   sentMessages     Message[]       @relation("SentMessages")
   receivedMessages Message[]       @relation("ReceivedMessages")
   billboards       Billboard[]
@@ -292,4 +309,18 @@ model GameStats {
   visitsAllTime Int      @default(0)
   updatedAt     DateTime @updatedAt
   @@map("game_stats")
+}
+
+
+model GameActivity {
+  id           String   @id @default(cuid())
+  playerId     String
+  player       Player   @relation(fields: [playerId], references: [id])
+  activityType String
+  reward       Int      @default(0)
+  statChanges  Json?
+  createdAt    DateTime @default(now())
+
+  @@index([playerId, activityType, createdAt])
+  @@map("game_activities")
 }

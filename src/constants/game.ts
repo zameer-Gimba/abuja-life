@@ -3,7 +3,39 @@
 
 export const GAME_NAME = "Abuja Life"
 export const CURRENCY_SYMBOL = "N"
-export const CURRENCY_NAME = "ABJ Naira"
+export const CURRENCY_NAME = "Game Naira"
+
+// ── World Landmarks & Everyday Facilities ─────────────────
+export const WORLD_CATEGORIES = [
+  "landmark", "fuel_station", "hospital", "school", "bank", "market",
+  "mall", "restaurant", "hotel", "cinema", "mosque", "church",
+  "government", "transport_hub", "metro_station", "park", "golf",
+  "event_venue", "car_dealership", "power_facility",
+]
+
+export const LANDMARKS = [
+  { name: "Aso Rock", category: "landmark", area: "Asokoro", importance: "major" },
+  { name: "National Assembly", category: "government", area: "Central Area", importance: "major" },
+  { name: "National Mosque", category: "mosque", area: "Central Area", importance: "major" },
+  { name: "National Christian Centre", category: "church", area: "Central Area", importance: "major" },
+  { name: "City Gate", category: "landmark", area: "CBD", importance: "major" },
+  { name: "World Trade Center", category: "landmark", area: "CBD", importance: "major" },
+  { name: "Jabi Lake", category: "park", area: "Jabi", importance: "major" },
+  { name: "Millennium Park", category: "park", area: "Maitama", importance: "major" },
+  { name: "Berger Junction", category: "transport_hub", area: "Berger", importance: "major" },
+]
+
+export const EVERYDAY_FACILITIES = [
+  { category: "fuel_station", label: "Fuel Station", gameplay: "refuel_vehicle" },
+  { category: "hospital", label: "Hospital", gameplay: "healthcare" },
+  { category: "school", label: "School", gameplay: "education" },
+  { category: "bank", label: "Bank", gameplay: "finance" },
+  { category: "market", label: "Market", gameplay: "shopping" },
+  { category: "restaurant", label: "Restaurant", gameplay: "food" },
+  { category: "hotel", label: "Hotel", gameplay: "lodging_or_jobs" },
+  { category: "car_dealership", label: "Car Dealership", gameplay: "vehicle_purchase" },
+  { category: "power_facility", label: "Power Facility", gameplay: "utilities" },
+]
 
 // ── Districts & Housing Tiers ──────────────────────────────
 export const DISTRICTS = {
@@ -26,13 +58,49 @@ export const HOUSING_TYPES = {
 }
 
 // ── Transport ──────────────────────────────────────────────
+export const TRAVEL_AREAS = [
+  "Nyanya", "Mararaba", "Lugbe", "Mpape", "Kubwa", "Gwarinpa",
+  "Garki", "Wuye", "Jabi", "Wuse 2", "Central Area", "Guzape", "Asokoro", "Maitama",
+] as const
+
+export const TRAVEL_AREA_DISTANCE: Record<string, number> = {
+  Nyanya: 1,
+  Mararaba: 1,
+  Lugbe: 2,
+  Mpape: 2,
+  Kubwa: 2,
+  Gwarinpa: 2,
+  Garki: 3,
+  Wuye: 3,
+  Jabi: 3,
+  "Wuse 2": 3,
+  "Central Area": 4,
+  Guzape: 4,
+  Asokoro: 4,
+  Maitama: 5,
+}
+
+export const TRAVEL_MODES = ["TREK", "BUS_STOP", "ALONE", "KEKE", "BOLT", "INDRIVE", "METRO", "PERSONAL_CAR"] as const
+export type TravelMode = (typeof TRAVEL_MODES)[number]
+
 export const TRANSPORT_TYPES = {
+  TREK: { label: "Trek", description: "Walk across town; builds fitness and earns a small activity reward", baseCost: 0 },
   BUS_STOP: { label: "Bus Stop", description: "Share a commercial car with strangers", baseCost: 150 },
   ALONE: { label: "Alone", description: "Charter the whole car solo — premium", baseCost: 800 },
   KEKE: { label: "Keke NAPEP", description: "Tricycle taxi — common in outskirts", baseCost: 100 },
-  BOLT: { label: "Bolt / Uber", description: "Ride-hailing app — comfortable", baseCost: 1200 },
+  BOLT: { label: "Bolt", description: "Ride-hailing app — comfortable", baseCost: 1200 },
+  INDRIVE: { label: "inDrive", description: "Ride-hailing with negotiated fares", baseCost: 1100 },
   METRO: { label: "Abuja Metro", description: "Light rail — cheap and modern", baseCost: 200 },
+  PERSONAL_CAR: { label: "Personal Car", description: "Drive your own vehicle; consumes fuel", baseCost: 0 },
   ONE_CHANCE: { label: "One Chance ⚠️", description: "Looks like a bus stop... but it's not.", baseCost: 0 },
+}
+
+export function calculateTravelCost(from: string, to: string, mode: TravelMode) {
+  const transport = TRANSPORT_TYPES[mode]
+  const fromDistance = TRAVEL_AREA_DISTANCE[from] ?? 1
+  const toDistance = TRAVEL_AREA_DISTANCE[to] ?? 1
+  const distanceFactor = Math.max(1, Math.abs(fromDistance - toDistance) + 1)
+  return transport.baseCost * distanceFactor
 }
 
 // ── Berger — The Mother of All Junctions ──────────────────
@@ -125,10 +193,12 @@ export const RANDOM_EVENTS = [
 ]
 
 // ── Election Types ─────────────────────────────────────────
+export const ELECTION_CYCLE_MONTHS = 4
+
 export const ELECTION_TYPES = {
-  AMAC: { label: "AMAC Chairman", scope: "Abuja Municipal", campaignDays: 14, minConnect: 30, minCampaignBudget: 500000 },
-  FCT_MINISTER: { label: "FCT Minister", scope: "Federal Capital Territory", campaignDays: 30, minConnect: 60, minCampaignBudget: 5000000 },
-  SENATORIAL: { label: "FCT Senate Seat", scope: "National", campaignDays: 30, minConnect: 80, minCampaignBudget: 10000000 },
+  PRESIDENT: { label: "Abuja President", scope: "Abuja Life", campaignDays: 30, minConnect: 80, minCampaignBudget: 10000000 },
+  FCT_GOVERNOR: { label: "FCT Governor", scope: "Federal Capital Territory", campaignDays: 30, minConnect: 60, minCampaignBudget: 5000000 },
+  FCT_CHAIRMAN: { label: "FCT Chairman", scope: "Municipal", campaignDays: 14, minConnect: 30, minCampaignBudget: 500000 },
 }
 
 // ── Topup Packages ─────────────────────────────────────────
