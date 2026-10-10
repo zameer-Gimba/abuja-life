@@ -125,6 +125,25 @@ export default function GameShell({ player }: { player: Player }) {
   const [activityBusy, setActivityBusy] = useState(false);
   const [activityToast, setActivityToast] = useState("");
   const [selectedNpc, setSelectedNpc] = useState<{ name: string; role: string; x: number; z: number } | null>(null);
+  const [npcHistory, setNpcHistory] = useState<{ greetings: number; lastSeenAt: string } | null>(null);
+
+  useEffect(() => {
+    if (!selectedNpc) {
+      setNpcHistory(null);
+      return;
+    }
+    let active = true;
+    setNpcHistory(null);
+    fetch("/api/game/social")
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("Contacts unavailable")))
+      .then((data: { contacts?: Array<{ name: string; greetings: number; lastSeenAt: string }> }) => {
+        if (!active) return;
+        const contact = data.contacts?.find((item) => item.name === selectedNpc.name);
+        setNpcHistory(contact ? { greetings: contact.greetings, lastSeenAt: contact.lastSeenAt } : { greetings: 0, lastSeenAt: "" });
+      })
+      .catch(() => { if (active) setNpcHistory({ greetings: 0, lastSeenAt: "" }); });
+    return () => { active = false; };
+  }, [selectedNpc?.name]);
 
   const cash = useMemo(() => Number(balance).toLocaleString(), [balance]);
   const displayedNetWorth = useMemo(() => Number(netWorth).toLocaleString(), [netWorth]);
@@ -382,7 +401,11 @@ export default function GameShell({ player }: { player: Player }) {
               <button onClick={() => { void performActivity("greet_neighbour", selectedNpc.name); setSelectedNpc(null); }} disabled={activityBusy} className="rounded-xl bg-emerald-400 px-3 py-2.5 text-xs font-black text-slate-950 transition hover:bg-emerald-300 disabled:opacity-50">{activityBusy ? "Saving…" : "Say hello"}</button>
               <button onClick={() => { setNotice(`${selectedNpc.name}: “${currentArea} has its own rhythm. Take your time and get to know the area.”`); setSelectedNpc(null); }} className="rounded-xl border border-white/15 bg-white/10 px-3 py-2.5 text-xs font-bold text-white transition hover:bg-white/15">Ask about the area</button>
             </div>
-            <p className="mt-2 text-[10px] text-slate-500">Select a resident to start a conversation. Greetings update your saved game stats.</p>
+            <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+              <div><p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Relationship</p><p className="mt-0.5 text-xs font-black text-amber-200">{npcHistory === null ? "Checking history…" : npcHistory.greetings === 0 ? "New face" : npcHistory.greetings < 3 ? "Familiar face" : "Known neighbour"}</p></div>
+              <p className="text-right text-[10px] text-slate-400">{npcHistory && npcHistory.greetings > 0 ? `${npcHistory.greetings} saved greeting${npcHistory.greetings === 1 ? "" : "s"}` : "Start building trust"}</p>
+            </div>
+            <p className="mt-2 text-[10px] text-slate-500">Your greetings are saved, so familiar residents stay familiar when you return.</p>
           </section>
         </div>}
 
