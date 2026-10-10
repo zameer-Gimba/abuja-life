@@ -1,12 +1,11 @@
 "use client";
 
-import { useGameClock } from "./use-game-clock";
+type GameClockLabelProps = {
+  dayNumber: number;
+  time: string;
+  period: string;
+};
 
-export default function GameClockLabel() {
-  const clock = useGameClock(1_000, true);
-  return (
-    <span title={clock.error || "Game time advances faster than real time"}>
-      Day {clock.dayNumber} · {clock.time} · {clock.period}
-    </span>
-  );
+export default function GameClockLabel({ dayNumber, time, period }: GameClockLabelProps) {
+  return <span title="Game time advances faster than real time">Day {dayNumber} · {time} · {period}</span>;
 }
