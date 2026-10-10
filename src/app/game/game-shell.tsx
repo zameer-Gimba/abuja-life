@@ -139,8 +139,8 @@ export default function GameShell({ player }: { player: Player }) {
   const [activityBusy, setActivityBusy] = useState(false);
   const [activityToast, setActivityToast] = useState("");
   const [selectedNpc, setSelectedNpc] = useState<{ id: string; name: string; role: string; x: number; z: number } | null>(null);
-  const [npcHistory, setNpcHistory] = useState<{ greetings: number; lastSeenAt: string } | null>(null);
-  const [savedContacts, setSavedContacts] = useState<Array<{ id: string; name: string; greetings: number; lastSeenAt: string }>>([]);
+  const [npcHistory, setNpcHistory] = useState<{ greetings: number; lastSeenAt: string; area?: string } | null>(null);
+  const [savedContacts, setSavedContacts] = useState<Array<{ id: string; name: string; greetings: number; lastSeenAt: string; area?: string }>>([]);
   const [contactsLoading, setContactsLoading] = useState(false);
 
   useEffect(() => {
@@ -152,12 +152,12 @@ export default function GameShell({ player }: { player: Player }) {
     setNpcHistory(null);
     fetch("/api/game/social")
       .then((response) => response.ok ? response.json() : Promise.reject(new Error("Contacts unavailable")))
-      .then((data: { contacts?: Array<{ id: string; name: string; greetings: number; lastSeenAt: string }> }) => {
+      .then((data: { contacts?: Array<{ id: string; name: string; greetings: number; lastSeenAt: string; area?: string }> }) => {
         if (!active) return;
         const contacts = data.contacts ?? [];
         const contact = contacts.find((item) => item.id === selectedNpc.id)
           ?? contacts.find((item) => item.id.startsWith("legacy:") && item.name === selectedNpc.name);
-        setNpcHistory(contact ? { greetings: contact.greetings, lastSeenAt: contact.lastSeenAt } : { greetings: 0, lastSeenAt: "" });
+        setNpcHistory(contact ? { greetings: contact.greetings, lastSeenAt: contact.lastSeenAt, area: contact.area } : { greetings: 0, lastSeenAt: "" });
       })
       .catch(() => { if (active) setNpcHistory({ greetings: 0, lastSeenAt: "" }); });
     return () => { active = false; };
@@ -517,7 +517,7 @@ export default function GameShell({ player }: { player: Player }) {
             </div>
             <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
               <div><p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Relationship</p><p className="mt-0.5 text-xs font-black text-amber-200">{npcHistory === null ? "Checking history…" : npcHistory.greetings === 0 ? "New face" : npcHistory.greetings < 3 ? "Familiar face" : "Known neighbour"}</p></div>
-              <p className="text-right text-[10px] text-slate-400">{npcHistory && npcHistory.greetings > 0 ? `${npcHistory.greetings} saved greeting${npcHistory.greetings === 1 ? "" : "s"}` : "Start building trust"}</p>
+              <div className="text-right"><p className="text-[10px] text-slate-400">{npcHistory && npcHistory.greetings > 0 ? `${npcHistory.greetings} saved greeting${npcHistory.greetings === 1 ? "" : "s"}` : "Start building trust"}</p>{npcHistory?.area && <p className="mt-1 text-[10px] text-emerald-300">Last met in {npcHistory.area}</p>}</div>
             </div>
             <p className="mt-2 text-[10px] text-slate-500">Your greetings are saved, so familiar residents stay familiar when you return.</p>
           </section>
@@ -781,7 +781,7 @@ export default function GameShell({ player }: { player: Player }) {
           </div>
           <div className="mt-5">
             <div className="flex items-center justify-between"><h3 className="text-sm font-black">Contacts</h3><span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{savedContacts.length} saved</span></div>
-            {contactsLoading ? <p className="mt-3 rounded-xl bg-slate-50 p-3 text-xs text-slate-500">Loading your connections…</p> : savedContacts.length ? <div className="mt-2 max-h-44 space-y-2 overflow-y-auto">{savedContacts.map((contact) => <div key={contact.id} className="flex items-center gap-3 rounded-2xl border border-slate-100 p-3"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-black text-emerald-800">{contact.name.split(/\s+/).map((part) => part[0]).slice(0, 2).join("")}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{contact.name}</p><p className="text-[11px] text-slate-500">{contact.greetings >= 5 ? "Known neighbour" : contact.greetings >= 2 ? "Familiar face" : "New face"} · {contact.greetings} {contact.greetings === 1 ? "greeting" : "greetings"}</p></div><span className="text-[10px] text-slate-400">{new Date(contact.lastSeenAt).toLocaleDateString()}</span></div>)}</div> : <p className="mt-2 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-500">Your contacts will appear here as you greet residents around Abuja.</p>}
+            {contactsLoading ? <p className="mt-3 rounded-xl bg-slate-50 p-3 text-xs text-slate-500">Loading your connections…</p> : savedContacts.length ? <div className="mt-2 max-h-44 space-y-2 overflow-y-auto">{savedContacts.map((contact) => <div key={contact.id} className="flex items-center gap-3 rounded-2xl border border-slate-100 p-3"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-black text-emerald-800">{contact.name.split(/\s+/).map((part) => part[0]).slice(0, 2).join("")}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{contact.name}</p><p className="text-[11px] text-slate-500">{contact.area ? `${contact.area} · ` : ""}{contact.greetings >= 5 ? "Known neighbour" : contact.greetings >= 2 ? "Familiar face" : "New face"} · {contact.greetings} {contact.greetings === 1 ? "greeting" : "greetings"}</p></div><span className="text-[10px] text-slate-400">{new Date(contact.lastSeenAt).toLocaleDateString()}</span></div>)}</div> : <p className="mt-2 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-500">Your contacts will appear here as you greet residents around Abuja.</p>}
           </div>
           {activityToast && <p role="status" className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">{activityToast}</p>}
           <p className="mt-4 text-xs leading-5 text-slate-500">Calls and contacts are in-game only. Your contacts are saved from your interaction history.</p>

@@ -16,18 +16,19 @@ export async function GET() {
       select: { statChanges: true, createdAt: true },
     });
 
-    const contacts = new Map<string, { id: string; name: string; greetings: number; lastSeenAt: string }>();
+    const contacts = new Map<string, { id: string; name: string; greetings: number; lastSeenAt: string; area?: string }>();
     for (const activity of activities) {
       const data = activity.statChanges;
       if (!data || typeof data !== "object" || Array.isArray(data)) continue;
       const name = "targetName" in data && typeof data.targetName === "string" ? data.targetName.trim().slice(0, 60) : "";
       if (!name) continue;
       const storedId = "targetId" in data && typeof data.targetId === "string" ? data.targetId.trim().slice(0, 120) : "";
+      const area = "targetArea" in data && typeof data.targetArea === "string" ? data.targetArea.trim().slice(0, 60) : "";
       // Keep legacy name-keyed greetings visible while new contacts use stable NPC identities.
       const id = storedId || `legacy:${name.toLowerCase()}`;
       const existing = contacts.get(id);
       if (existing) existing.greetings += 1;
-      else contacts.set(id, { id, name, greetings: 1, lastSeenAt: activity.createdAt.toISOString() });
+      else contacts.set(id, { id, name, greetings: 1, lastSeenAt: activity.createdAt.toISOString(), ...(area ? { area } : {}) });
     }
 
     return NextResponse.json({

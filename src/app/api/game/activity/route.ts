@@ -209,7 +209,7 @@ export async function POST(request: Request) {
         cost: config.cost,
         reward: config.reward,
         gameDayNumber: gameClock.dayNumber,
-        ...(key === "greet_neighbour" && targetName ? { targetName, ...(targetId ? { targetId } : {}) } : {}),
+        ...(key === "greet_neighbour" && targetName ? { targetName, targetArea: player.currentArea, ...(targetId ? { targetId } : {}) } : {}),
       };
       const message = key === "greet_neighbour" && targetName
         ? `You greeted ${targetName}. A friendly conversation helped build your connections.`
