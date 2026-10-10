@@ -107,7 +107,7 @@ export default function GameShell({ player }: { player: Player }) {
   const [travelling, setTravelling] = useState(false);
   const [balance, setBalance] = useState(BigInt(player.walletBalance));
   const [netWorth, setNetWorth] = useState(BigInt(player.totalNetWorth));
-  const [jobs, setJobs] = useState<Array<{ title: string; category: string; location: string; payPerShift: number; shiftHours: number; minHustle?: number; minIntelligence?: number; minConnect?: number; requiresVehicle?: boolean }>>([]);
+  const [jobs, setJobs] = useState<Array<{ title: string; category: string; location: string; venue?: string; opensAt?: number | null; commissionBased?: boolean; payPerShift: number; shiftHours: number; minHustle?: number; minIntelligence?: number; minConnect?: number; requiresVehicle?: boolean }>>([]);
   const [jobLoading, setJobLoading] = useState(false);
   const [jobNotice, setJobNotice] = useState("");
   const [activeJob, setActiveJob] = useState(player.currentJob);
@@ -585,8 +585,8 @@ export default function GameShell({ player }: { player: Player }) {
               {jobNotice && <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800">{jobNotice}</div>}
               <div className="mt-6 grid gap-3 md:grid-cols-2">
                 {jobs.map((job) => <div key={job.title} className="rounded-2xl border border-slate-200 p-5">
-                  <div className="flex items-start justify-between gap-3"><div><p className="font-black">{job.title}</p><p className="mt-1 text-xs font-semibold text-slate-500">{job.location} · {job.shiftHours}h shift</p></div><span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold uppercase text-emerald-700">{job.category}</span></div>
-                  <p className="mt-4 text-xl font-black">₦{job.payPerShift.toLocaleString()} <span className="text-xs font-semibold text-slate-400">/ shift</span></p>
+                  <div className="flex items-start justify-between gap-3"><div><p className="font-black">{job.title}</p><p className="mt-1 text-xs font-semibold text-slate-500">{job.location} · {job.venue ?? job.location}</p><p className="mt-1 text-xs text-slate-500">{job.commissionBased ? "Commission-based earnings" : `${job.shiftHours}h shift`}{job.opensAt !== null && job.opensAt !== undefined ? ` · Opens ${String(job.opensAt).padStart(2, "0")}:00` : ""}</p></div><span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold uppercase text-emerald-700">{job.category}</span></div>
+                  <p className="mt-4 text-xl font-black">{job.commissionBased ? "Commission" : `₦${job.payPerShift.toLocaleString()}`} {!job.commissionBased && <span className="text-xs font-semibold text-slate-400">/ shift</span>}</p>
                   <p className="mt-2 text-xs text-slate-500">Requirements: Hustle {job.minHustle ?? 0} · Intelligence {job.minIntelligence ?? 0} · Connection {job.minConnect ?? 0}{job.requiresVehicle ? " · Vehicle" : ""}</p>
                   <button onClick={() => applyForJob(job.title)} disabled={jobLoading} className="mt-4 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold hover:bg-slate-50">Apply</button>
                 </div>)}
