@@ -113,6 +113,7 @@ export default function GameShell({ player }: { player: Player }) {
   const [travelMode, setTravelMode] = useState<TravelMode>("BUS_STOP");
   const [travelling, setTravelling] = useState(false);
   const [balance, setBalance] = useState(BigInt(player.walletBalance));
+  const [bankBalance, setBankBalance] = useState(BigInt(player.bankBalance));
   const [netWorth, setNetWorth] = useState(BigInt(player.totalNetWorth));
   const [jobs, setJobs] = useState<Array<{ title: string; category: string; location: string; payPerShift: number; shiftHours: number; opensAt?: number; closesAt?: number; minHustle?: number; minIntelligence?: number; minConnect?: number; requiresVehicle?: boolean; careerRecord?: { shiftsWorked: number; totalEarned: string; performance: number } | null }>>([]);
   const [jobLoading, setJobLoading] = useState(false);
@@ -125,7 +126,9 @@ export default function GameShell({ player }: { player: Player }) {
   const [happiness, setHappiness] = useState(player.happiness);
   const [aura, setAura] = useState(player.aura);
   const [connection, setConnection] = useState(player.connectLevel);
+  const [drivingSkill, setDrivingSkill] = useState(player.drivingSkill);
   const [hasVehicle, setHasVehicle] = useState(player.hasVehicle);
+  const [vehicleName, setVehicleName] = useState(player.vehicleName);
   const [vehicleFuel, setVehicleFuel] = useState(player.vehicleFuel);
   const [worldScene, setWorldScene] = useState<"home" | "street" | "mosque">(player.currentArea === homeArea ? "home" : "street");
   const [mapOpen, setMapOpen] = useState(false);
@@ -176,6 +179,29 @@ export default function GameShell({ player }: { player: Player }) {
   const displayedNetWorth = useMemo(() => Number(netWorth).toLocaleString(), [netWorth]);
   const currentJob = player.currentJob;
   const activeJobDetails = jobs.find((job) => job.title === activeJob);
+  const activeJobWorkplace = activeJob ? JOB_WORKPLACE_AREAS[activeJob] : undefined;
+  const activeJobShiftOpen = activeJobDetails?.opensAt === undefined
+    || isWithinOpeningWindow(gameClock.minuteOfDay, activeJobDetails.opensAt, activeJobDetails.shiftHours, activeJobDetails.closesAt);
+  const activeJobRequirementsMet = Boolean(activeJobDetails
+    && player.hustle >= (activeJobDetails.minHustle ?? 0)
+    && player.intelligence >= (activeJobDetails.minIntelligence ?? 0)
+    && connection >= (activeJobDetails.minConnect ?? 0)
+    && (!activeJobDetails.requiresVehicle || hasVehicle));
+  const canCompleteActiveShift = Boolean(activeJobDetails
+    && activeJobDetails.payPerShift > 0
+    && activeJobRequirementsMet
+    && activeJobShiftOpen
+    && (!activeJobWorkplace || currentArea === activeJobWorkplace));
+  const currentStats: Record<(typeof stats)[number][1], number> = {
+    aura,
+    steez: player.steez,
+    composure: player.composure,
+    hustle: player.hustle,
+    intelligence: player.intelligence,
+    drivingSkill,
+    streetSense: player.streetSense,
+    connectLevel: connection,
+  };
 
   async function refreshGameClock() {
     await gameClock.refresh();
@@ -288,6 +314,7 @@ export default function GameShell({ player }: { player: Player }) {
       setNetWorth(BigInt(data.totalNetWorth));
       if (typeof data.fitness === "number") setFitness(data.fitness);
       if (typeof data.happiness === "number") setHappiness(data.happiness);
+      if (typeof data.drivingSkill === "number") setDrivingSkill(data.drivingSkill);
       if (typeof data.vehicleFuel === "number") setVehicleFuel(data.vehicleFuel);
       const arrivalMessage = travelMode === "TREK"
         ? `You trekked to ${destinationLabel}. +₦${Number(data.reward ?? 0).toLocaleString()} Game Naira · Fitness +2.`
@@ -686,11 +713,11 @@ export default function GameShell({ player }: { player: Player }) {
               <p className="mt-2 text-sm text-slate-400">Complete a shift to earn Game Naira and build your employment history.</p>
               {activeJobDetails?.payPerShift === 0 && <p className="mt-3 rounded-xl bg-white/10 px-4 py-3 text-sm font-semibold text-slate-300">This commission-based role is listed, but commission payouts are not available yet.</p>}
               {JOB_WORKPLACE_AREAS[activeJob] && <p className="mt-3 rounded-xl bg-white/10 px-4 py-3 text-sm font-semibold text-slate-200">Workplace: {JOB_WORKPLACE_AREAS[activeJob]}{currentArea === JOB_WORKPLACE_AREAS[activeJob] ? " · You are here" : " · You are currently in " + currentArea}</p>}
-              <button onClick={completeShift} disabled={jobLoading || activeJobDetails?.payPerShift === 0} className="mt-5 rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-50">{jobLoading ? "Processing..." : activeJobDetails?.payPerShift === 0 ? "Payout coming soon" : "Complete Shift"}</button>
+              <button onClick={completeShift} disabled={jobLoading || !canCompleteActiveShift} className="mt-5 rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-50">{jobLoading ? "Processing..." : activeJobDetails?.payPerShift === 0 ? "Payout coming soon" : !activeJobDetails ? "Loading job…" : !activeJobRequirementsMet ? "Requirements not met" : !activeJobShiftOpen ? "Off shift · try later" : activeJobWorkplace && currentArea !== activeJobWorkplace ? `Travel to ${activeJobWorkplace}` : "Complete Shift"}</button>
             </div>}
           </div>}
-          {view === "vehicles" && <VehiclePanel onUpdate={(data) => { setBalance(BigInt(data.walletBalance)); setNetWorth(BigInt(data.totalNetWorth)); setNotice(data.message); if (data.vehicle) { setHasVehicle(true); if (typeof data.vehicle.fuel === "number") setVehicleFuel(data.vehicle.fuel); } if (typeof data.vehicleFuel === "number") setVehicleFuel(data.vehicleFuel); }} />}
-          {view === "bank" && <BankPanel onUpdate={(b, message) => { setBalance(BigInt(b.walletBalance)); setNetWorth(BigInt(b.totalNetWorth)); setNotice(message); }} />}
+          {view === "vehicles" && <VehiclePanel onUpdate={(data) => { setBalance(BigInt(data.walletBalance)); setNetWorth(BigInt(data.totalNetWorth)); setNotice(data.message); if (data.vehicle) { setHasVehicle(true); if (typeof data.vehicle.name === "string") setVehicleName(data.vehicle.name); if (typeof data.vehicle.fuel === "number") setVehicleFuel(data.vehicle.fuel); } if (typeof data.vehicleFuel === "number") setVehicleFuel(data.vehicleFuel); if (typeof data.drivingSkill === "number") setDrivingSkill(data.drivingSkill); }} />}
+          {view === "bank" && <BankPanel onUpdate={(b, message) => { setBalance(BigInt(b.walletBalance)); setBankBalance(BigInt(b.bankBalance)); setNetWorth(BigInt(b.totalNetWorth)); setNotice(message); }} />}
           {view === "property" && <PropertyPanel onUpdate={(data) => {
             setBalance(BigInt(data.walletBalance));
             setNetWorth(BigInt(data.netWorth));
@@ -708,10 +735,10 @@ export default function GameShell({ player }: { player: Player }) {
         <aside className="space-y-5">
           <div className="rounded-2xl border border-slate-200 bg-white p-5">
             <div className="flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-wider text-slate-400">Player</p><p className="mt-1 text-xl font-black">{player.displayName}</p></div><div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 font-black text-emerald-700">{player.displayName.slice(0,1).toUpperCase()}</div></div>
-            <div className="mt-5 grid grid-cols-2 gap-2">{stats.map(([label,key]) => <div key={label} className="rounded-xl bg-slate-50 p-3"><p className="text-[10px] font-bold uppercase text-slate-400">{label}</p><p className="mt-1 text-lg font-black">{player[key]}</p></div>)}</div>
+            <div className="mt-5 grid grid-cols-2 gap-2">{stats.map(([label,key]) => <div key={label} className="rounded-xl bg-slate-50 p-3"><p className="text-[10px] font-bold uppercase text-slate-400">{label}</p><p className="mt-1 text-lg font-black">{currentStats[key]}</p></div>)}</div>
           </div>
-          <div className="rounded-2xl bg-slate-950 p-5 text-white"><div className="flex items-center gap-2 text-blue-300"><Wallet size={18} /><span className="text-xs font-bold uppercase tracking-wider">Financial snapshot</span></div><p className="mt-4 text-3xl font-black">₦{cash}</p><div className="mt-4 grid grid-cols-2 gap-2 text-xs"><div className="rounded-xl bg-white/5 p-3"><p className="text-slate-400">Bank</p><p className="mt-1 font-bold">₦{Number(player.bankBalance).toLocaleString()}</p></div><div className="rounded-xl bg-white/5 p-3"><p className="text-slate-400">Net worth</p><p className="mt-1 font-bold">₦{displayedNetWorth}</p></div></div></div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5"><div className="flex items-center gap-2"><Home size={17} className="text-emerald-600" /><span className="font-bold">Home</span></div><p className="mt-3 text-lg font-black">{homeArea}</p><p className="text-sm text-slate-500">{housingType}</p><div className="mt-4 flex items-center gap-2 text-xs font-semibold text-slate-500"><Car size={14} /> {player.hasVehicle ? player.vehicleName ?? "Vehicle owned" : "No vehicle yet"}</div></div>
+          <div className="rounded-2xl bg-slate-950 p-5 text-white"><div className="flex items-center gap-2 text-blue-300"><Wallet size={18} /><span className="text-xs font-bold uppercase tracking-wider">Financial snapshot</span></div><p className="mt-4 text-3xl font-black">₦{cash}</p><div className="mt-4 grid grid-cols-2 gap-2 text-xs"><div className="rounded-xl bg-white/5 p-3"><p className="text-slate-400">Bank</p><p className="mt-1 font-bold">₦{Number(bankBalance).toLocaleString()}</p></div><div className="rounded-xl bg-white/5 p-3"><p className="text-slate-400">Net worth</p><p className="mt-1 font-bold">₦{displayedNetWorth}</p></div></div></div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-5"><div className="flex items-center gap-2"><Home size={17} className="text-emerald-600" /><span className="font-bold">Home</span></div><p className="mt-3 text-lg font-black">{homeArea}</p><p className="text-sm text-slate-500">{housingType}</p><div className="mt-4 flex items-center gap-2 text-xs font-semibold text-slate-500"><Car size={14} /> {hasVehicle ? vehicleName ?? "Vehicle owned" : "No vehicle yet"}</div></div>
         </aside>
       </div>
 
