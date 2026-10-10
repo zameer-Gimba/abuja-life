@@ -4,7 +4,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { Environment, OrbitControls, Text } from "@react-three/drei";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import { isNightTime } from "@/lib/game-clock-utils";
+import { getNightFactor, isNightTime, mixHexColor } from "@/lib/game-clock-utils";
 
 export type CharacterLook = {
   gender: string;
@@ -318,17 +318,17 @@ export function Character({ look, onPosition, moveTarget, streetMode = false, sh
   );
 }
 
-function RoomScene({ look, sceneId, onPosition, moveTarget, isNight }: { look: CharacterLook; sceneId: string; onPosition: (x: number, z: number) => void; moveTarget: { x: number; z: number } | null; isNight: boolean }) {
+function RoomScene({ look, sceneId, onPosition, moveTarget, isNight, nightFactor }: { look: CharacterLook; sceneId: string; onPosition: (x: number, z: number) => void; moveTarget: { x: number; z: number } | null; isNight: boolean; nightFactor: number }) {
   return (
     <>
       <color attach="background" args={["#252b2d"]} />
-      <ambientLight intensity={isNight ? 0.62 : 1.55} />
-      <directionalLight position={[4, 8, 5]} color={isNight ? "#9aaddd" : "#ffffff"} intensity={isNight ? 0.72 : 2.1} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
-      <hemisphereLight args={[isNight ? "#26344f" : "#fff1d2", "#7b8067", isNight ? 0.5 : 1.1]} />
+      <ambientLight intensity={1.55 - 0.93 * nightFactor} />
+      <directionalLight position={[4, 8, 5]} color={mixHexColor("#ffffff", "#9aaddd", nightFactor)} intensity={2.1 - 1.38 * nightFactor} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
+      <hemisphereLight args={[mixHexColor("#fff1d2", "#26344f", nightFactor), "#7b8067", 1.1 - 0.6 * nightFactor]} />
       <RoomFurniture sceneId={sceneId} />
       <Character look={look} onPosition={onPosition} moveTarget={moveTarget} showCrown />
       <Text position={[-3.65, 2.75, 3.72]} rotation={[0, 0, 0]} fontSize={0.14} color="#f4e5b5" anchorX="center">EXIT</Text>
-      <Environment preset="apartment" environmentIntensity={isNight ? 0.28 : 1} />
+      <Environment preset="apartment" environmentIntensity={1 - 0.72 * nightFactor} />
     </>
   );
 }
@@ -476,7 +476,7 @@ function StreetTree({ x, z, variant = 0 }: { x: number; z: number; variant?: num
   );
 }
 
-function StreetScene({ look, area, onPosition, moveTarget, onNpcSelect, isNight }: { look: CharacterLook; area: string; onPosition: (x: number, z: number) => void; moveTarget: { x: number; z: number } | null; onNpcSelect?: (npc: NpcProfile) => void; isNight: boolean }) {
+function StreetScene({ look, area, onPosition, moveTarget, onNpcSelect, isNight, nightFactor }: { look: CharacterLook; area: string; onPosition: (x: number, z: number) => void; moveTarget: { x: number; z: number } | null; onNpcSelect?: (npc: NpcProfile) => void; isNight: boolean; nightFactor: number }) {
   const isQuiet = ["Maitama", "Asokoro", "Guzape"].includes(area);
   const isCentral = area === "Central Area";
   const isWuse = area === "Wuse 2";
@@ -587,11 +587,11 @@ function StreetScene({ look, area, onPosition, moveTarget, onNpcSelect, isNight 
 
   return (
     <>
-      <color attach="background" args={[isNight ? "#10192d" : "#a9d4ee"]} />
-      <fog attach="fog" args={[isNight ? "#10192d" : "#c9dfeb", 24, 48]} />
-      <ambientLight intensity={isNight ? 0.38 : 1.05} />
-      <hemisphereLight args={[isNight ? "#293653" : "#e8f5ff", "#786b53", isNight ? 0.5 : 1.25]} />
-      <directionalLight position={[-7, 16, 8]} color={isNight ? "#8291bd" : "#ffffff"} intensity={isNight ? 0.22 : 2.35} castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
+      <color attach="background" args={[mixHexColor("#a9d4ee", "#10192d", nightFactor)]} />
+      <fog attach="fog" args={[mixHexColor("#c9dfeb", "#10192d", nightFactor), 24, 48]} />
+      <ambientLight intensity={1.05 - 0.67 * nightFactor} />
+      <hemisphereLight args={[mixHexColor("#e8f5ff", "#293653", nightFactor), "#786b53", 1.25 - 0.75 * nightFactor]} />
+      <directionalLight position={[-7, 16, 8]} color={mixHexColor("#ffffff", "#8291bd", nightFactor)} intensity={2.35 - 2.13 * nightFactor} castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]} receiveShadow><planeGeometry args={[42, 30]} /><meshStandardMaterial color="#c5bca9" roughness={1} /></mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow><planeGeometry args={[36, 8.4]} /><meshStandardMaterial color="#50565b" roughness={0.95} /></mesh>
       <mesh position={[0, 0.09, -4.9]} receiveShadow><boxGeometry args={[36, 0.18, 1.7]} /><meshStandardMaterial color="#b9b3a4" roughness={1} /></mesh>
@@ -607,8 +607,8 @@ function StreetScene({ look, area, onPosition, moveTarget, onNpcSelect, isNight 
       {[-11, -3, 5, 12].map((x, i) => <StreetTree key={`tree-s-${x}`} x={x} z={6.35} variant={i + 1} />)}
       {[-12, -4, 4, 12].map((x) => <StreetLamp key={`lamp-n-${x}`} x={x} z={-5.15} />)}
       {[-8, 0, 8].map((x) => <StreetLamp key={`lamp-s-${x}`} x={x} z={5.15} />)}
-      {isNight && [-12, -4, 4, 12].map((x) => <pointLight key={`lamp-glow-n-${x}`} position={[x, 2.8, -5.15]} color="#ffdca3" intensity={0.75} distance={9} />)}
-      {isNight && [-8, 0, 8].map((x) => <pointLight key={`lamp-glow-s-${x}`} position={[x, 2.8, 5.15]} color="#ffdca3" intensity={0.75} distance={9} />)}
+      {nightFactor > 0 && [-12, -4, 4, 12].map((x) => <pointLight key={`lamp-glow-n-${x}`} position={[x, 2.8, -5.15]} color="#ffdca3" intensity={0.75 * nightFactor} distance={9} />)}
+      {nightFactor > 0 && [-8, 0, 8].map((x) => <pointLight key={`lamp-glow-s-${x}`} position={[x, 2.8, 5.15]} color="#ffdca3" intensity={0.75 * nightFactor} distance={9} />)}
       {/* Raised zebra crossing near the player spawn, with clearly marked road edges. */}
       {Array.from({ length: 7 }, (_, i) => <mesh key={`crossing-${i}`} position={[-1.8 + i * 0.6, 0.025, -2.15]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[0.32, 1.15]} /><meshStandardMaterial color="#f0eee5" roughness={0.9} /></mesh>)}
       <mesh position={[0, 0.045, -3.95]}><boxGeometry args={[36, 0.055, 0.07]} /><meshStandardMaterial color="#d9c9a3" /></mesh>
@@ -623,7 +623,7 @@ function StreetScene({ look, area, onPosition, moveTarget, onNpcSelect, isNight 
       {people.map((person, index) => <AmbientPedestrian key={index} {...person} name={["Amina Yusuf", "Tunde Okafor", "Zainab Bello", "Emeka Nwosu", "Hauwa Musa", "Chinedu Eze", "Maryam Sani", "Sadiq Abdullahi"][index % 8]} role={["Shop owner", "University student", "Neighbour", "Ride-hailing driver", "Office worker", "Local trader", "Creative freelancer", "Community volunteer"][index % 8]} onSelect={onNpcSelect} />)}
       <Character look={look} onPosition={onPosition} moveTarget={moveTarget} streetMode showCrown />
       <Text position={[0, 3.8, -5.4]} rotation={[0, 0, 0]} fontSize={0.38} color="#153c37" anchorX="center">{streetLabel}</Text>
-      <Environment preset="city" environmentIntensity={isNight ? 0.18 : 1} />
+      <Environment preset="city" environmentIntensity={1 - 0.82 * nightFactor} />
     </>
   );
 }
@@ -642,7 +642,7 @@ function PalmTree({ position }: { position: [number, number, number] }) {
   );
 }
 
-function MosqueScene({ look, onPosition, moveTarget, onNpcSelect, isNight }: { look: CharacterLook; onPosition: (x: number, z: number) => void; moveTarget: { x: number; z: number } | null; onNpcSelect?: (npc: NpcProfile) => void; isNight: boolean }) {
+function MosqueScene({ look, onPosition, moveTarget, onNpcSelect, isNight, nightFactor }: { look: CharacterLook; onPosition: (x: number, z: number) => void; moveTarget: { x: number; z: number } | null; onNpcSelect?: (npc: NpcProfile) => void; isNight: boolean; nightFactor: number }) {
   const worshippers: AmbientPedestrianProps[] = [
     { x: -4.8, z: 2.3, shirt: "#f3eee2", trousers: "#e8e1d2", skin: "#75462f", hair: "#171514", walking: true },
     { x: 4.7, z: 1.8, shirt: "#27715e", trousers: "#26374b", skin: "#603923", hair: "#171514", gender: "female", hairStyle: "braids", walking: true },
@@ -652,10 +652,10 @@ function MosqueScene({ look, onPosition, moveTarget, onNpcSelect, isNight }: { l
 
   return (
     <>
-      <color attach="background" args={[isNight ? "#111b30" : "#b7d9e9"]} />
-      <ambientLight intensity={isNight ? 0.48 : 1.35} />
-      <hemisphereLight args={[isNight ? "#283552" : "#f8f5e9", "#78846c", isNight ? 0.5 : 1.25]} />
-      <directionalLight position={[7, 13, 8]} color={isNight ? "#8794bf" : "#ffffff"} intensity={isNight ? 0.26 : 2.1} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
+      <color attach="background" args={[mixHexColor("#b7d9e9", "#111b30", nightFactor)]} />
+      <ambientLight intensity={1.35 - 0.87 * nightFactor} />
+      <hemisphereLight args={[mixHexColor("#f8f5e9", "#283552", nightFactor), "#78846c", 1.25 - 0.75 * nightFactor]} />
+      <directionalLight position={[7, 13, 8]} color={mixHexColor("#ffffff", "#8794bf", nightFactor)} intensity={2.1 - 1.84 * nightFactor} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.06, 0]} receiveShadow><planeGeometry args={[19, 16]} /><meshStandardMaterial color="#d2c9b9" roughness={0.96} /></mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 1.5]} receiveShadow><planeGeometry args={[11, 8]} /><meshStandardMaterial color="#b6a58a" roughness={1} /></mesh>
       {Array.from({ length: 5 }, (_, row) => Array.from({ length: 5 }, (_, col) => <mesh key={row + ":" + col} position={[-3.8 + col * 1.9, 0.025, -4.4 + row * 0.95]}><boxGeometry args={[1.55, 0.025, 0.72]} /><meshStandardMaterial color={(row + col) % 2 ? "#1b7568" : "#bb8a4c"} roughness={0.9} /></mesh>))}
@@ -679,7 +679,7 @@ function MosqueScene({ look, onPosition, moveTarget, onNpcSelect, isNight }: { l
       <Character look={look} onPosition={onPosition} moveTarget={moveTarget} streetMode showCrown />
       <Text position={[0, 5.65, -4.5]} fontSize={0.34} color="#17574b" anchorX="center">ABUJA NATIONAL MOSQUE</Text>
       <Text position={[0, 0.4, 6.6]} fontSize={0.24} color="#536b61" anchorX="center">COURTYARD · CENTRAL AREA</Text>
-      <Environment preset="city" environmentIntensity={isNight ? 0.18 : 1} />
+      <Environment preset="city" environmentIntensity={1 - 0.82 * nightFactor} />
     </>
   );
 }
@@ -700,6 +700,7 @@ export default function WorldHome({ look, sceneId, immersive = false, worldScene
   const [position, setPosition] = useState({ x: 0, z: 0 });
   const [moveTarget, setMoveTarget] = useState<{ x: number; z: number } | null>(null);
   const isNight = isNightTime(timeOfDayMinutes);
+  const nightFactor = getNightFactor(timeOfDayMinutes);
   const homeTitle = worldScene === "mosque" ? "ABUJA NATIONAL MOSQUE" : worldScene === "street" ? `${area.toUpperCase()} STREET` : sceneId === "guzape_mansion_v1" ? "GUZAPE MANSION" : "NYANYA SHARED ROOM";
 
   const positionLabel = useMemo(() => `Room position: ${position.x.toFixed(1)}, ${position.z.toFixed(1)}`, [position]);
@@ -717,10 +718,10 @@ export default function WorldHome({ look, sceneId, immersive = false, worldScene
         <Canvas shadows dpr={[1, 1.5]} camera={worldScene === "home" ? { position: [7, 7.8, 8], fov: 36 } : worldScene === "mosque" ? { position: [9, 9, 11], fov: 43 } : { position: [12, 10, 13], fov: 42 }}>
           <Suspense fallback={null}>
             {worldScene === "street"
-              ? <StreetScene look={look} area={area} moveTarget={moveTarget} isNight={isNight} onPosition={(x, z) => setPosition({ x, z })} onNpcSelect={(npc) => { setMoveTarget({ x: npc.x - 1, z: npc.z }); onNpcSelect?.(npc); }} />
+              ? <StreetScene look={look} area={area} moveTarget={moveTarget} isNight={isNight} nightFactor={nightFactor} onPosition={(x, z) => setPosition({ x, z })} onNpcSelect={(npc) => { setMoveTarget({ x: npc.x - 1, z: npc.z }); onNpcSelect?.(npc); }} />
               : worldScene === "mosque"
-                ? <MosqueScene look={look} moveTarget={moveTarget} isNight={isNight} onPosition={(x, z) => setPosition({ x, z })} onNpcSelect={(npc) => { setMoveTarget({ x: npc.x - 1, z: npc.z }); onNpcSelect?.(npc); }} />
-                : <RoomScene look={look} sceneId={sceneId} moveTarget={moveTarget} isNight={isNight} onPosition={(x, z) => setPosition({ x, z })} />}
+                ? <MosqueScene look={look} moveTarget={moveTarget} isNight={isNight} nightFactor={nightFactor} onPosition={(x, z) => setPosition({ x, z })} onNpcSelect={(npc) => { setMoveTarget({ x: npc.x - 1, z: npc.z }); onNpcSelect?.(npc); }} />
+                : <RoomScene look={look} sceneId={sceneId} moveTarget={moveTarget} isNight={isNight} nightFactor={nightFactor} onPosition={(x, z) => setPosition({ x, z })} />}
             <ClickGround
               width={worldScene === "home" ? (sceneId === "guzape_mansion_v1" ? 13 : 9) : worldScene === "mosque" ? 18 : 42}
               depth={worldScene === "home" ? (sceneId === "guzape_mansion_v1" ? 11 : 8) : worldScene === "mosque" ? 15 : 30}

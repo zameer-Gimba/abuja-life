@@ -86,3 +86,26 @@ export function isWithinOpeningWindow(
     elapsedSinceOpening + shiftHours * 60 <= openingWindowMinutes
   );
 }
+
+/** Smooth lighting transition for dawn and dusk while gameplay rules use the discrete day/night boundary. */
+export function getNightFactor(minuteOfDay: number): number {
+  const minute = ((Math.floor(minuteOfDay) % 1440) + 1440) % 1440;
+  if (minute >= 19 * 60 || minute < 5 * 60) return 1;
+  if (minute >= 17 * 60) return (minute - 17 * 60) / (2 * 60);
+  if (minute >= 5 * 60 && minute < 7 * 60) return 1 - (minute - 5 * 60) / (2 * 60);
+  return 0;
+}
+
+/** Blend two six-digit hex colors, with factor 0 returning dayColor and 1 returning nightColor. */
+export function mixHexColor(dayColor: string, nightColor: string, factor: number): string {
+  const parse = (color: string) => {
+    const hex = color.startsWith("#") ? color.slice(1) : color;
+    if (!/^[0-9a-fA-F]{6}$/.test(hex)) throw new Error("Expected a six-digit hex color.");
+    return [0, 2, 4].map((offset) => Number.parseInt(hex.slice(offset, offset + 2), 16));
+  };
+  const day = parse(dayColor);
+  const night = parse(nightColor);
+  const amount = Math.max(0, Math.min(1, factor));
+  const channels = day.map((value, index) => Math.round(value + (night[index] - value) * amount));
+  return "#" + channels.map((value) => value.toString(16).padStart(2, "0")).join("");
+}
