@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getLagosDayStart } from "@/lib/lagos-day";
 import { calculateTravelCost, TRAVEL_AREAS, TRAVEL_AREA_DISTANCE, TRAVEL_MODES, type TravelMode } from "@/constants/game";
 
 const DURATIONS: Record<TravelMode, number> = {
@@ -63,8 +64,7 @@ export async function POST(request: Request) {
       if (mode === "PERSONAL_CAR" && !player.hasVehicle) throw new Error("NO_PERSONAL_CAR");
       if (mode === "TREK") {
         const now = new Date();
-        const dayStart = new Date(now);
-        dayStart.setHours(0, 0, 0, 0);
+        const dayStart = getLagosDayStart(now);
         const lastTrek = await tx.gameActivity.findFirst({
           where: { playerId, activityType: "trek" },
           orderBy: { createdAt: "desc" },
