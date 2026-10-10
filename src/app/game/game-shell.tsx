@@ -138,9 +138,9 @@ export default function GameShell({ player }: { player: Player }) {
   const [phoneOpen, setPhoneOpen] = useState(false);
   const [activityBusy, setActivityBusy] = useState(false);
   const [activityToast, setActivityToast] = useState("");
-  const [selectedNpc, setSelectedNpc] = useState<{ name: string; role: string; x: number; z: number } | null>(null);
+  const [selectedNpc, setSelectedNpc] = useState<{ id: string; name: string; role: string; x: number; z: number } | null>(null);
   const [npcHistory, setNpcHistory] = useState<{ greetings: number; lastSeenAt: string } | null>(null);
-  const [savedContacts, setSavedContacts] = useState<Array<{ name: string; greetings: number; lastSeenAt: string }>>([]);
+  const [savedContacts, setSavedContacts] = useState<Array<{ id: string; name: string; greetings: number; lastSeenAt: string }>>([]);
   const [contactsLoading, setContactsLoading] = useState(false);
 
   useEffect(() => {
@@ -152,14 +152,14 @@ export default function GameShell({ player }: { player: Player }) {
     setNpcHistory(null);
     fetch("/api/game/social")
       .then((response) => response.ok ? response.json() : Promise.reject(new Error("Contacts unavailable")))
-      .then((data: { contacts?: Array<{ name: string; greetings: number; lastSeenAt: string }> }) => {
+      .then((data: { contacts?: Array<{ id: string; name: string; greetings: number; lastSeenAt: string }> }) => {
         if (!active) return;
-        const contact = data.contacts?.find((item) => item.name === selectedNpc.name);
+        const contact = data.contacts?.find((item) => item.id === selectedNpc.id || item.name === selectedNpc.name);
         setNpcHistory(contact ? { greetings: contact.greetings, lastSeenAt: contact.lastSeenAt } : { greetings: 0, lastSeenAt: "" });
       })
       .catch(() => { if (active) setNpcHistory({ greetings: 0, lastSeenAt: "" }); });
     return () => { active = false; };
-  }, [selectedNpc?.name]);
+  }, [selectedNpc?.id]);
 
   useEffect(() => {
     if (!phoneOpen) return;
@@ -359,7 +359,7 @@ export default function GameShell({ player }: { player: Player }) {
     }
   }
 
-  async function performActivity(activity: "walk" | "dance" | "eat" | "call_mummy" | "greet_neighbour" | "pray_salah" | "perform_wudu" | "read_quran" | "give_sadaqah", targetName?: string) {
+  async function performActivity(activity: "walk" | "dance" | "eat" | "call_mummy" | "greet_neighbour" | "pray_salah" | "perform_wudu" | "read_quran" | "give_sadaqah", targetName?: string, targetId?: string) {
     if (activityBusy) return;
     setActivityBusy(true);
     setActivityToast("");
@@ -367,7 +367,7 @@ export default function GameShell({ player }: { player: Player }) {
       const response = await fetch("/api/game/activity", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ activity, ...(targetName ? { targetName } : {}) }),
+        body: JSON.stringify({ activity, ...(targetName ? { targetName } : {}), ...(targetId ? { targetId } : {}) }),
       });
       const data = await response.json();
       if (!response.ok) {
@@ -492,7 +492,7 @@ export default function GameShell({ player }: { player: Player }) {
             </div>
             <p className="mt-3 rounded-xl bg-white/5 p-3 text-xs leading-5 text-slate-200">“{selectedNpc.role === "Shop owner" ? "Welcome. If you need provisions, there are a few good shops around here." : selectedNpc.role === "University student" ? "I'm trying to balance classes and life in Abuja. Have you explored the area yet?" : selectedNpc.role === "Neighbour" ? "This neighbourhood has its own rhythm. You will get to know familiar faces soon." : selectedNpc.role === "Ride-hailing driver" ? "Traffic changes quickly around Abuja. Plan your trip before the rush gets worse." : selectedNpc.role === "Office worker" ? "The workday moves fast here. I try to find time to enjoy the city too." : selectedNpc.role === "Local trader" ? "Business is all about knowing people and showing up consistently." : selectedNpc.role === "Creative freelancer" ? "There are always new ideas and people to meet around the city." : selectedNpc.role === "Community volunteer" ? "A good neighbourhood starts when people look out for each other." : "It is good to see you. May your day go well."}”</p>
             <div className="mt-3 grid grid-cols-2 gap-2">
-              <button onClick={() => { void performActivity("greet_neighbour", selectedNpc.name); setSelectedNpc(null); }} disabled={activityBusy} className="rounded-xl bg-emerald-400 px-3 py-2.5 text-xs font-black text-slate-950 transition hover:bg-emerald-300 disabled:opacity-50">{activityBusy ? "Saving…" : "Say hello"}</button>
+              <button onClick={() => { void performActivity("greet_neighbour", selectedNpc.name, selectedNpc.id); setSelectedNpc(null); }} disabled={activityBusy} className="rounded-xl bg-emerald-400 px-3 py-2.5 text-xs font-black text-slate-950 transition hover:bg-emerald-300 disabled:opacity-50">{activityBusy ? "Saving…" : "Say hello"}</button>
               <button onClick={() => { setNotice(`${selectedNpc.name}: “${currentArea} has its own rhythm. Take your time and get to know the area.”`); setSelectedNpc(null); }} className="rounded-xl border border-white/15 bg-white/10 px-3 py-2.5 text-xs font-bold text-white transition hover:bg-white/15">Ask about the area</button>
             </div>
             <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
@@ -757,7 +757,7 @@ export default function GameShell({ player }: { player: Player }) {
           </div>
           <div className="mt-5">
             <div className="flex items-center justify-between"><h3 className="text-sm font-black">Contacts</h3><span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{savedContacts.length} saved</span></div>
-            {contactsLoading ? <p className="mt-3 rounded-xl bg-slate-50 p-3 text-xs text-slate-500">Loading your connections…</p> : savedContacts.length ? <div className="mt-2 max-h-44 space-y-2 overflow-y-auto">{savedContacts.map((contact) => <div key={contact.name} className="flex items-center gap-3 rounded-2xl border border-slate-100 p-3"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-black text-emerald-800">{contact.name.split(/\s+/).map((part) => part[0]).slice(0, 2).join("")}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{contact.name}</p><p className="text-[11px] text-slate-500">{contact.greetings >= 5 ? "Known neighbour" : contact.greetings >= 2 ? "Familiar face" : "New face"} · {contact.greetings} {contact.greetings === 1 ? "greeting" : "greetings"}</p></div><span className="text-[10px] text-slate-400">{new Date(contact.lastSeenAt).toLocaleDateString()}</span></div>)}</div> : <p className="mt-2 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-500">Your contacts will appear here as you greet residents around Abuja.</p>}
+            {contactsLoading ? <p className="mt-3 rounded-xl bg-slate-50 p-3 text-xs text-slate-500">Loading your connections…</p> : savedContacts.length ? <div className="mt-2 max-h-44 space-y-2 overflow-y-auto">{savedContacts.map((contact) => <div key={contact.id} className="flex items-center gap-3 rounded-2xl border border-slate-100 p-3"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-black text-emerald-800">{contact.name.split(/\s+/).map((part) => part[0]).slice(0, 2).join("")}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{contact.name}</p><p className="text-[11px] text-slate-500">{contact.greetings >= 5 ? "Known neighbour" : contact.greetings >= 2 ? "Familiar face" : "New face"} · {contact.greetings} {contact.greetings === 1 ? "greeting" : "greetings"}</p></div><span className="text-[10px] text-slate-400">{new Date(contact.lastSeenAt).toLocaleDateString()}</span></div>)}</div> : <p className="mt-2 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-500">Your contacts will appear here as you greet residents around Abuja.</p>}
           </div>
           {activityToast && <p role="status" className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">{activityToast}</p>}
           <p className="mt-4 text-xs leading-5 text-slate-500">Calls and contacts are in-game only. Your contacts are saved from your interaction history.</p>

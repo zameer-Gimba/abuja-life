@@ -334,8 +334,9 @@ function RoomScene({ look, sceneId, onPosition, moveTarget, isNight, nightFactor
 }
 
 
-type NpcProfile = { name: string; role: string; x: number; z: number };
+type NpcProfile = { id: string; name: string; role: string; x: number; z: number };
 type AmbientPedestrianProps = {
+  id?: string;
   x: number;
   z: number;
   shirt: string;
@@ -351,7 +352,39 @@ type AmbientPedestrianProps = {
   onSelect?: (npc: NpcProfile) => void;
 };
 
-function AmbientPedestrian({ x, z, shirt, trousers, skin, hair, gender = "male", hairStyle = "low_cut", walking = false, waving = false, name = "Neighbour", role = "Local resident", onSelect }: AmbientPedestrianProps) {
+const STREET_NPC_FIRST_NAMES = [
+  "Amina", "Tunde", "Zainab", "Emeka", "Hauwa", "Chinedu", "Maryam", "Sadiq",
+  "Fatima", "Bashir", "Hadiza", "Ifeanyi", "Musa", "Amaka", "Yusuf", "Ngozi",
+  "Abdul", "Kemi", "Yakubu", "Nneka", "Bello", "Aisha", "Ibrahim", "Ada",
+];
+const STREET_NPC_LAST_NAMES = [
+  "Yusuf", "Okafor", "Bello", "Nwosu", "Musa", "Eze", "Sani", "Abdullahi",
+  "Umar", "Adeyemi", "Balogun", "Mohammed", "Ibrahim", "Olawale", "Danladi", "Garba",
+  "Ojo", "Chukwu", "Bako", "Aliyu", "Onyeka", "Audu", "Mamman", "Bakare",
+];
+const STREET_NPC_ROLES = [
+  "Shop owner", "University student", "Neighbour", "Ride-hailing driver",
+  "Office worker", "Local trader", "Creative freelancer", "Community volunteer",
+];
+
+function stableHash(value: string) {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = Math.imul(hash ^ value.charCodeAt(index), 16777619);
+  }
+  return hash >>> 0;
+}
+
+function getStreetNpcIdentity(area: string, x: number, z: number) {
+  const slug = area.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const id = `street:${slug}:${x.toFixed(1)}:${z.toFixed(1)}`;
+  const first = STREET_NPC_FIRST_NAMES[stableHash(id + ":first") % STREET_NPC_FIRST_NAMES.length];
+  const last = STREET_NPC_LAST_NAMES[stableHash(id + ":last") % STREET_NPC_LAST_NAMES.length];
+  const role = STREET_NPC_ROLES[stableHash(id + ":role") % STREET_NPC_ROLES.length];
+  return { id, name: `${first} ${last}`, role };
+}
+
+function AmbientPedestrian({ id, x, z, shirt, trousers, skin, hair, gender = "male", hairStyle = "low_cut", walking = false, waving = false, name = "Neighbour", role = "Local resident", onSelect }: AmbientPedestrianProps) {
   const root = useRef<THREE.Group>(null);
   const waveArm = useRef<THREE.Mesh>(null);
 
@@ -361,7 +394,7 @@ function AmbientPedestrian({ x, z, shirt, trousers, skin, hair, gender = "male",
   });
 
   return (
-    <group ref={root} position={[x, 0, z]} onClick={(event) => { event.stopPropagation(); onSelect?.({ name, role, x, z }); }} onPointerOver={() => { document.body.style.cursor = "pointer"; }} onPointerOut={() => { document.body.style.cursor = "auto"; }}>
+    <group ref={root} position={[x, 0, z]} onClick={(event) => { event.stopPropagation(); onSelect?.({ id: id ?? `resident:${name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-")}`, name, role, x, z }); }} onPointerOver={() => { document.body.style.cursor = "pointer"; }} onPointerOut={() => { document.body.style.cursor = "auto"; }}>
       <mesh position={[0, 0.035, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.2, 0.29, 20]} /><meshBasicMaterial color="#f4ce58" transparent opacity={0.72} /></mesh>
       <mesh position={[0, 0.63, 0]} castShadow><capsuleGeometry args={[0.14, 0.55, 4, 8]} /><meshStandardMaterial color={shirt} roughness={0.86} /></mesh>
       <mesh position={[0, 1.12, 0]} castShadow><sphereGeometry args={[0.135, 10, 8]} /><meshStandardMaterial color={skin} roughness={0.9} /></mesh>
@@ -620,7 +653,7 @@ function StreetScene({ look, area, onPosition, moveTarget, onNpcSelect, isNight,
       </group>
       {vehicles.map((vehicle) => <MovingCar key={vehicle.startX + ":" + vehicle.z} {...vehicle} />)}
       {!isQuiet && (!isNight || isWuse || isCentral) && <><KekeNapep startX={-2} z={-1.32} speed={isNight ? 0.95 : 1.25} /><KekeNapep startX={12} z={1.42} speed={isNight ? -0.8 : -1.05} /></>}
-      {people.map((person, index) => <AmbientPedestrian key={index} {...person} name={["Amina Yusuf", "Tunde Okafor", "Zainab Bello", "Emeka Nwosu", "Hauwa Musa", "Chinedu Eze", "Maryam Sani", "Sadiq Abdullahi"][index % 8]} role={["Shop owner", "University student", "Neighbour", "Ride-hailing driver", "Office worker", "Local trader", "Creative freelancer", "Community volunteer"][index % 8]} onSelect={onNpcSelect} />)}
+      {people.map((person) => { const identity = getStreetNpcIdentity(area, person.x, person.z); return <AmbientPedestrian key={identity.id} {...person} {...identity} onSelect={onNpcSelect} />; })}
       <Character look={look} onPosition={onPosition} moveTarget={moveTarget} streetMode showCrown />
       <Text position={[0, 3.8, -5.4]} rotation={[0, 0, 0]} fontSize={0.38} color="#153c37" anchorX="center">{streetLabel}</Text>
       <Environment preset="city" environmentIntensity={1 - 0.82 * nightFactor} />
