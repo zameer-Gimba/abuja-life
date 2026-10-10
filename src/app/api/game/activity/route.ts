@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { getLagosDayStart } from "@/lib/lagos-day";
-import { advanceGameClock } from "@/lib/game-clock";
+import { advanceGameClock, getGameClock } from "@/lib/game-clock";
 
 const ACTIVITIES = {
   walk: {
@@ -104,7 +103,6 @@ export async function POST(request: Request) {
   const key = activity as ActivityKey;
   const config = ACTIVITIES[key];
   const now = new Date();
-  const dayStart = getLagosDayStart(now);
 
   try {
     const result = await db.$transaction(async (tx) => {
@@ -132,6 +130,8 @@ export async function POST(request: Request) {
         throw new Error("NOT_AT_MOSQUE");
       }
 
+      const gameClock = await getGameClock(tx, playerId, now);
+
       const previous = await tx.gameActivity.findFirst({
         where: { playerId, activityType: key },
         orderBy: { createdAt: "desc" },
@@ -143,9 +143,14 @@ export async function POST(request: Request) {
         if (elapsed < cooldownMs) throw new Error(`COOLDOWN:${Math.ceil((cooldownMs - elapsed) / 1000)}`);
       }
 
-      const todayCount = await tx.gameActivity.count({
-        where: { playerId, activityType: key, createdAt: { gte: dayStart } },
-      });
+      const dailyActivityRows = await tx.$queryRaw<Array<{ count: bigint }>>`
+        SELECT COUNT(*)::bigint AS count
+        FROM "game_activities"
+        WHERE "playerId" = ${playerId}
+          AND "activityType" = ${key}
+          AND ("statChanges"->>'gameDayNumber') = ${String(gameClock.dayNumber)}
+      `;
+      const todayCount = Number(dailyActivityRows[0]?.count ?? 0n);
       if (todayCount >= 12) throw new Error("DAILY_LIMIT");
 
       const changes = config.changes as Partial<Record<"health" | "fitness" | "happiness" | "aura" | "connectLevel", number>>;
@@ -202,6 +207,7 @@ export async function POST(request: Request) {
         ...config.changes,
         cost: config.cost,
         reward: config.reward,
+        gameDayNumber: gameClock.dayNumber,
         ...(key === "greet_neighbour" && targetName ? { targetName } : {}),
       };
       const message = key === "greet_neighbour" && targetName
