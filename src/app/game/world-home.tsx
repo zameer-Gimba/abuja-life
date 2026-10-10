@@ -333,6 +333,7 @@ function RoomScene({ look, onPosition, moveTarget }: { look: CharacterLook; onPo
 }
 
 
+type NpcProfile = { name: string; role: string; x: number; z: number };
 type AmbientPedestrianProps = {
   x: number;
   z: number;
@@ -344,9 +345,12 @@ type AmbientPedestrianProps = {
   hairStyle?: "low_cut" | "natural_puff" | "braids";
   walking?: boolean;
   waving?: boolean;
+  name?: string;
+  role?: string;
+  onSelect?: (npc: NpcProfile) => void;
 };
 
-function AmbientPedestrian({ x, z, shirt, trousers, skin, hair, gender = "male", hairStyle = "low_cut", walking = false, waving = false }: AmbientPedestrianProps) {
+function AmbientPedestrian({ x, z, shirt, trousers, skin, hair, gender = "male", hairStyle = "low_cut", walking = false, waving = false, name = "Neighbour", role = "Local resident", onSelect }: AmbientPedestrianProps) {
   const root = useRef<THREE.Group>(null);
   const waveArm = useRef<THREE.Mesh>(null);
 
@@ -356,7 +360,8 @@ function AmbientPedestrian({ x, z, shirt, trousers, skin, hair, gender = "male",
   });
 
   return (
-    <group ref={root} position={[x, 0, z]}>
+    <group ref={root} position={[x, 0, z]} onClick={(event) => { event.stopPropagation(); onSelect?.({ name, role, x, z }); }} onPointerOver={() => { document.body.style.cursor = "pointer"; }} onPointerOut={() => { document.body.style.cursor = "auto"; }}>
+      <mesh position={[0, 0.035, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.2, 0.29, 20]} /><meshBasicMaterial color="#f4ce58" transparent opacity={0.72} /></mesh>
       <mesh position={[0, 0.63, 0]} castShadow><capsuleGeometry args={[0.14, 0.55, 4, 8]} /><meshStandardMaterial color={shirt} roughness={0.86} /></mesh>
       <mesh position={[0, 1.12, 0]} castShadow><sphereGeometry args={[0.135, 10, 8]} /><meshStandardMaterial color={skin} roughness={0.9} /></mesh>
       {hairStyle === "natural_puff" ? <group position={[0, 1.2, -0.015]}>
@@ -470,7 +475,7 @@ function StreetTree({ x, z, variant = 0 }: { x: number; z: number; variant?: num
   );
 }
 
-function StreetScene({ look, area, onPosition, moveTarget }: { look: CharacterLook; area: string; onPosition: (x: number, z: number) => void; moveTarget: { x: number; z: number } | null }) {
+function StreetScene({ look, area, onPosition, moveTarget, onNpcSelect }: { look: CharacterLook; area: string; onPosition: (x: number, z: number) => void; moveTarget: { x: number; z: number } | null; onNpcSelect?: (npc: NpcProfile) => void }) {
   const isQuiet = ["Maitama", "Asokoro", "Guzape"].includes(area);
   const isCentral = area === "Central Area";
   const isWuse = area === "Wuse 2";
@@ -588,7 +593,7 @@ function StreetScene({ look, area, onPosition, moveTarget }: { look: CharacterLo
       </group>
       {vehicles.map((vehicle) => <MovingCar key={vehicle.startX + ":" + vehicle.z} {...vehicle} />)}
       {!isQuiet && <><KekeNapep startX={-2} z={-1.32} speed={1.25} /><KekeNapep startX={12} z={1.42} speed={-1.05} /></>}
-      {people.map((person, index) => <AmbientPedestrian key={index} {...person} />)}
+      {people.map((person, index) => <AmbientPedestrian key={index} {...person} name={["Amina Yusuf", "Tunde Okafor", "Zainab Bello", "Emeka Nwosu", "Hauwa Musa", "Chinedu Eze", "Maryam Sani", "Sadiq Abdullahi"][index % 8]} role={["Shop owner", "University student", "Neighbour", "Ride-hailing driver", "Office worker", "Local trader", "Creative freelancer", "Community volunteer"][index % 8]} onSelect={onNpcSelect} />)}
       <Character look={look} onPosition={onPosition} moveTarget={moveTarget} streetMode showCrown />
       <Text position={[0, 3.8, -5.4]} rotation={[0, 0, 0]} fontSize={0.38} color="#153c37" anchorX="center">{streetLabel}</Text>
       <Environment preset="city" />
@@ -610,7 +615,7 @@ function PalmTree({ position }: { position: [number, number, number] }) {
   );
 }
 
-function MosqueScene({ look, onPosition, moveTarget }: { look: CharacterLook; onPosition: (x: number, z: number) => void; moveTarget: { x: number; z: number } | null }) {
+function MosqueScene({ look, onPosition, moveTarget, onNpcSelect }: { look: CharacterLook; onPosition: (x: number, z: number) => void; moveTarget: { x: number; z: number } | null; onNpcSelect?: (npc: NpcProfile) => void }) {
   const worshippers: AmbientPedestrianProps[] = [
     { x: -4.8, z: 2.3, shirt: "#f3eee2", trousers: "#e8e1d2", skin: "#75462f", hair: "#171514", walking: true },
     { x: 4.7, z: 1.8, shirt: "#27715e", trousers: "#26374b", skin: "#603923", hair: "#171514", gender: "female", hairStyle: "braids", walking: true },
@@ -643,7 +648,7 @@ function MosqueScene({ look, onPosition, moveTarget }: { look: CharacterLook; on
         <mesh position={[0, 0.12, 0]}><cylinderGeometry args={[1.6, 1.6, 0.22, 28]} /><meshStandardMaterial color="#bfae8c" roughness={0.94} /></mesh>
         <mesh position={[0, 0.25, 0]}><cylinderGeometry args={[1.24, 1.24, 0.08, 28]} /><meshStandardMaterial color="#e7e0d1" /></mesh>
       </group>
-      {worshippers.map((person, index) => <AmbientPedestrian key={index} {...person} />)}
+      {worshippers.map((person, index) => <AmbientPedestrian key={index} {...person} name={["Abdulrahman", "Fatima", "Ibrahim", "Safiya"][index]} role={["Community elder", "Student", "Shopkeeper", "Neighbour"][index]} onSelect={onNpcSelect} />)}
       <Character look={look} onPosition={onPosition} moveTarget={moveTarget} streetMode showCrown />
       <Text position={[0, 5.65, -4.5]} fontSize={0.34} color="#17574b" anchorX="center">ABUJA NATIONAL MOSQUE</Text>
       <Text position={[0, 0.4, 6.6]} fontSize={0.24} color="#536b61" anchorX="center">COURTYARD · CENTRAL AREA</Text>
@@ -664,7 +669,7 @@ function ClickGround({ width, depth, onMoveTo }: { width: number; depth: number;
   );
 }
 
-export default function WorldHome({ look, sceneId, immersive = false, worldScene = "home", area = "Nyanya" }: { look: CharacterLook; sceneId: string; immersive?: boolean; worldScene?: "home" | "street" | "mosque"; area?: string }) {
+export default function WorldHome({ look, sceneId, immersive = false, worldScene = "home", area = "Nyanya", onNpcSelect }: { look: CharacterLook; sceneId: string; immersive?: boolean; worldScene?: "home" | "street" | "mosque"; area?: string; onNpcSelect?: (npc: NpcProfile) => void }) {
   const [position, setPosition] = useState({ x: 0, z: 0 });
   const [moveTarget, setMoveTarget] = useState<{ x: number; z: number } | null>(null);
   const homeTitle = worldScene === "mosque" ? "ABUJA NATIONAL MOSQUE" : worldScene === "street" ? `${area.toUpperCase()} STREET` : sceneId === "guzape_mansion_v1" ? "GUZAPE MANSION" : "NYANYA SHARED ROOM";
@@ -684,9 +689,9 @@ export default function WorldHome({ look, sceneId, immersive = false, worldScene
         <Canvas shadows dpr={[1, 1.5]} camera={worldScene === "home" ? { position: [7, 7.8, 8], fov: 36 } : worldScene === "mosque" ? { position: [9, 9, 11], fov: 43 } : { position: [12, 10, 13], fov: 42 }}>
           <Suspense fallback={null}>
             {worldScene === "street"
-              ? <StreetScene look={look} area={area} moveTarget={moveTarget} onPosition={(x, z) => setPosition({ x, z })} />
+              ? <StreetScene look={look} area={area} moveTarget={moveTarget} onPosition={(x, z) => setPosition({ x, z })} onNpcSelect={(npc) => { setMoveTarget({ x: npc.x - 1, z: npc.z }); onNpcSelect?.(npc); }} />
               : worldScene === "mosque"
-                ? <MosqueScene look={look} moveTarget={moveTarget} onPosition={(x, z) => setPosition({ x, z })} />
+                ? <MosqueScene look={look} moveTarget={moveTarget} onPosition={(x, z) => setPosition({ x, z })} onNpcSelect={(npc) => { setMoveTarget({ x: npc.x - 1, z: npc.z }); onNpcSelect?.(npc); }} />
                 : <RoomScene look={look} moveTarget={moveTarget} onPosition={(x, z) => setPosition({ x, z })} />}
             <ClickGround
               width={worldScene === "home" ? (sceneId === "guzape_mansion_v1" ? 13 : 9) : worldScene === "mosque" ? 18 : 42}

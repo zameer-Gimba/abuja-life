@@ -124,6 +124,26 @@ export default function GameShell({ player }: { player: Player }) {
   const [phoneOpen, setPhoneOpen] = useState(false);
   const [activityBusy, setActivityBusy] = useState(false);
   const [activityToast, setActivityToast] = useState("");
+  const [selectedNpc, setSelectedNpc] = useState<{ name: string; role: string; x: number; z: number } | null>(null);
+  const [npcHistory, setNpcHistory] = useState<{ greetings: number; lastSeenAt: string } | null>(null);
+
+  useEffect(() => {
+    if (!selectedNpc) {
+      setNpcHistory(null);
+      return;
+    }
+    let active = true;
+    setNpcHistory(null);
+    fetch("/api/game/social")
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("Contacts unavailable")))
+      .then((data: { contacts?: Array<{ name: string; greetings: number; lastSeenAt: string }> }) => {
+        if (!active) return;
+        const contact = data.contacts?.find((item) => item.name === selectedNpc.name);
+        setNpcHistory(contact ? { greetings: contact.greetings, lastSeenAt: contact.lastSeenAt } : { greetings: 0, lastSeenAt: "" });
+      })
+      .catch(() => { if (active) setNpcHistory({ greetings: 0, lastSeenAt: "" }); });
+    return () => { active = false; };
+  }, [selectedNpc?.name]);
 
   const cash = useMemo(() => Number(balance).toLocaleString(), [balance]);
   const displayedNetWorth = useMemo(() => Number(netWorth).toLocaleString(), [netWorth]);
@@ -251,7 +271,7 @@ export default function GameShell({ player }: { player: Player }) {
     }
   }
 
-  async function performActivity(activity: "walk" | "dance" | "eat" | "call_mummy" | "greet_neighbour" | "pray_salah" | "perform_wudu" | "read_quran" | "give_sadaqah") {
+  async function performActivity(activity: "walk" | "dance" | "eat" | "call_mummy" | "greet_neighbour" | "pray_salah" | "perform_wudu" | "read_quran" | "give_sadaqah", targetName?: string) {
     if (activityBusy) return;
     setActivityBusy(true);
     setActivityToast("");
@@ -259,7 +279,7 @@ export default function GameShell({ player }: { player: Player }) {
       const response = await fetch("/api/game/activity", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ activity }),
+        body: JSON.stringify({ activity, ...(targetName ? { targetName } : {}) }),
       });
       const data = await response.json();
       if (!response.ok) {
@@ -296,6 +316,7 @@ export default function GameShell({ player }: { player: Player }) {
             immersive
             worldScene={worldScene}
             area={currentArea}
+            onNpcSelect={(npc) => { setSelectedNpc(npc); setMapOpen(false); }}
           />
         </div>
 
@@ -364,6 +385,28 @@ export default function GameShell({ player }: { player: Player }) {
               <button onClick={() => void performActivity("give_sadaqah")} disabled={activityBusy} className="w-full rounded-lg bg-white px-2.5 py-2 text-left text-[11px] font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50">Give Sadaqah · ₦100</button>
             </div>
           </div>
+        </div>}
+
+        {selectedNpc && <div className="absolute bottom-[92px] left-1/2 z-40 w-[min(92vw,380px)] -translate-x-1/2 sm:bottom-24">
+          <section className="rounded-[24px] border border-white/20 bg-slate-950/95 p-4 text-white shadow-2xl backdrop-blur-xl">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-400 text-sm font-black text-slate-950">{selectedNpc.name.split(" ").map(part => part[0]).slice(0, 2).join("")}</div>
+                <div><p className="text-[9px] font-black uppercase tracking-[0.18em] text-emerald-300">Neighbourhood contact</p><h2 className="mt-0.5 text-base font-black">{selectedNpc.name}</h2><p className="text-xs text-slate-400">{selectedNpc.role} · {currentArea}</p></div>
+              </div>
+              <button onClick={() => setSelectedNpc(null)} aria-label="Close conversation" className="rounded-full bg-white/10 p-2 text-slate-300 hover:bg-white/20"><X size={16} /></button>
+            </div>
+            <p className="mt-3 rounded-xl bg-white/5 p-3 text-xs leading-5 text-slate-200">“{selectedNpc.role === "Shop owner" ? "Welcome. If you need provisions, there are a few good shops around here." : selectedNpc.role === "University student" ? "I'm trying to balance classes and life in Abuja. Have you explored the area yet?" : selectedNpc.role === "Neighbour" ? "This neighbourhood has its own rhythm. You will get to know familiar faces soon." : selectedNpc.role === "Ride-hailing driver" ? "Traffic changes quickly around Abuja. Plan your trip before the rush gets worse." : selectedNpc.role === "Office worker" ? "The workday moves fast here. I try to find time to enjoy the city too." : selectedNpc.role === "Local trader" ? "Business is all about knowing people and showing up consistently." : selectedNpc.role === "Creative freelancer" ? "There are always new ideas and people to meet around the city." : selectedNpc.role === "Community volunteer" ? "A good neighbourhood starts when people look out for each other." : "It is good to see you. May your day go well."}”</p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button onClick={() => { void performActivity("greet_neighbour", selectedNpc.name); setSelectedNpc(null); }} disabled={activityBusy} className="rounded-xl bg-emerald-400 px-3 py-2.5 text-xs font-black text-slate-950 transition hover:bg-emerald-300 disabled:opacity-50">{activityBusy ? "Saving…" : "Say hello"}</button>
+              <button onClick={() => { setNotice(`${selectedNpc.name}: “${currentArea} has its own rhythm. Take your time and get to know the area.”`); setSelectedNpc(null); }} className="rounded-xl border border-white/15 bg-white/10 px-3 py-2.5 text-xs font-bold text-white transition hover:bg-white/15">Ask about the area</button>
+            </div>
+            <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+              <div><p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Relationship</p><p className="mt-0.5 text-xs font-black text-amber-200">{npcHistory === null ? "Checking history…" : npcHistory.greetings === 0 ? "New face" : npcHistory.greetings < 3 ? "Familiar face" : "Known neighbour"}</p></div>
+              <p className="text-right text-[10px] text-slate-400">{npcHistory && npcHistory.greetings > 0 ? `${npcHistory.greetings} saved greeting${npcHistory.greetings === 1 ? "" : "s"}` : "Start building trust"}</p>
+            </div>
+            <p className="mt-2 text-[10px] text-slate-500">Your greetings are saved, so familiar residents stay familiar when you return.</p>
+          </section>
         </div>}
 
         {activityToast && <div role="status" className="absolute left-1/2 top-[86px] z-30 flex w-[min(92vw,460px)] -translate-x-1/2 items-start justify-between gap-3 rounded-2xl border border-emerald-200 bg-white/95 px-4 py-3 text-sm font-semibold text-slate-800 shadow-xl backdrop-blur">
@@ -450,7 +493,7 @@ export default function GameShell({ player }: { player: Player }) {
           <button onClick={() => { setPhoneOpen(true); setActivityOpen(false); }} className="flex min-w-[61px] flex-col items-center gap-1 rounded-2xl px-3 py-2 text-slate-300 transition hover:bg-white/10 hover:text-white sm:min-w-[76px] sm:px-4"><Smartphone size={18} /><span className="text-[10px] font-bold">Phone</span></button>
           <button onClick={() => { setActivityOpen(true); setPhoneOpen(false); }} className="flex min-w-[61px] flex-col items-center gap-1 rounded-2xl px-3 py-2 text-slate-300 transition hover:bg-white/10 hover:text-white sm:min-w-[76px] sm:px-4"><Activity size={18} /><span className="text-[10px] font-bold">Activities</span></button>
         </nav>
-        <div className="pointer-events-none absolute bottom-[86px] left-3 hidden rounded-xl border border-white/15 bg-slate-950/75 px-3 py-2 text-[11px] font-semibold text-white/80 shadow-lg backdrop-blur sm:bottom-5 sm:left-5 sm:block">W A S D <span className="text-white/40">/</span> Arrow keys <span className="text-white/40">·</span> Click ground to walk</div>
+        <div className="pointer-events-none absolute bottom-[86px] left-3 hidden rounded-xl border border-white/15 bg-slate-950/75 px-3 py-2 text-[11px] font-semibold text-white/80 shadow-lg backdrop-blur sm:bottom-5 sm:left-5 sm:block">W A S D <span className="text-white/40">/</span> Arrow keys <span className="text-white/40">·</span> Click ground to walk <span className="text-white/40">·</span> Tap residents to talk</div>
       </main>
     );
   }
