@@ -689,9 +689,9 @@ export default function WorldHome({ look, sceneId, immersive = false, worldScene
         <Canvas shadows dpr={[1, 1.5]} camera={worldScene === "home" ? { position: [7, 7.8, 8], fov: 36 } : worldScene === "mosque" ? { position: [9, 9, 11], fov: 43 } : { position: [12, 10, 13], fov: 42 }}>
           <Suspense fallback={null}>
             {worldScene === "street"
-              ? <StreetScene look={look} area={area} moveTarget={moveTarget} onPosition={(x, z) => setPosition({ x, z })} onNpcSelect={onNpcSelect} />
+              ? <StreetScene look={look} area={area} moveTarget={moveTarget} onPosition={(x, z) => setPosition({ x, z })} onNpcSelect={(npc) => { setMoveTarget({ x: npc.x - 1, z: npc.z }); onNpcSelect?.(npc); }} />
               : worldScene === "mosque"
-                ? <MosqueScene look={look} moveTarget={moveTarget} onPosition={(x, z) => setPosition({ x, z })} onNpcSelect={onNpcSelect} />
+                ? <MosqueScene look={look} moveTarget={moveTarget} onPosition={(x, z) => setPosition({ x, z })} onNpcSelect={(npc) => { setMoveTarget({ x: npc.x - 1, z: npc.z }); onNpcSelect?.(npc); }} />
                 : <RoomScene look={look} moveTarget={moveTarget} onPosition={(x, z) => setPosition({ x, z })} />}
             <ClickGround
               width={worldScene === "home" ? (sceneId === "guzape_mansion_v1" ? 13 : 9) : worldScene === "mosque" ? 18 : 42}
