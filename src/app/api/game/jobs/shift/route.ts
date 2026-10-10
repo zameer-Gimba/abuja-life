@@ -2,19 +2,10 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { JOBS } from "@/constants/game";
+import { JOBS, JOB_WORKPLACE_AREAS } from "@/constants/game";
 import { advanceGameClock, formatGameTime, getGameClock, isWithinOpeningWindow } from "@/lib/game-clock";
 
-const REQUIRED_AREA_BY_JOB: Record<string, string> = {
-  "Flyer Distributor": "Wuse 2",
-  "Suya Spot Attendant": "Wuse 2",
-  "Shop Assistant": "Wuse 2",
-  "Restaurant Staff": "Jabi",
-  "Hotel Staff": "Central Area",
-  "Bank Teller": "Garki",
-  "Junior Civil Servant": "Garki",
-  "Hype Man": "Wuse 2",
-};
+
 
 export async function POST() {
   const session = await getServerSession(authOptions);
@@ -51,7 +42,7 @@ export async function POST() {
       const job = JOBS.find((item) => item.title === player.currentJob);
       if (!job) throw new Error("JOB_NOT_FOUND");
 
-      const requiredArea = REQUIRED_AREA_BY_JOB[job.title];
+      const requiredArea = JOB_WORKPLACE_AREAS[job.title];
       if (requiredArea && player.currentArea !== requiredArea) {
         throw new Error("WORKPLACE_AREA:" + requiredArea);
       }
@@ -142,7 +133,8 @@ export async function POST() {
         },
       });
 
-      await advanceGameClock(tx, player.id, job.shiftHours ?? 0, "job_shift");
+      // shiftHours is expressed in hours; the game clock API expects minutes.
+      await advanceGameClock(tx, player.id, (job.shiftHours ?? 0) * 60, "job_shift");
 
       return {
         walletBalance: balanceAfter.toString(),
