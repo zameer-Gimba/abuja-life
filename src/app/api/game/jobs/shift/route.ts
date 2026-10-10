@@ -132,6 +132,7 @@ export async function POST() {
         performanceGain,
         performanceScore: player.performanceScore + performanceGain,
         shiftsCompleted: player.shiftsCompleted + 1,
+        shiftHours: job.shiftHours ?? 8,
       };
     });
 
