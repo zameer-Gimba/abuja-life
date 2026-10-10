@@ -318,14 +318,14 @@ export function Character({ look, onPosition, moveTarget, streetMode = false, sh
   );
 }
 
-function RoomScene({ look, onPosition, moveTarget, isNight }: { look: CharacterLook; onPosition: (x: number, z: number) => void; moveTarget: { x: number; z: number } | null; isNight: boolean }) {
+function RoomScene({ look, sceneId, onPosition, moveTarget, isNight }: { look: CharacterLook; sceneId: string; onPosition: (x: number, z: number) => void; moveTarget: { x: number; z: number } | null; isNight: boolean }) {
   return (
     <>
       <color attach="background" args={["#252b2d"]} />
       <ambientLight intensity={isNight ? 0.62 : 1.55} />
       <directionalLight position={[4, 8, 5]} color={isNight ? "#9aaddd" : "#ffffff"} intensity={isNight ? 0.72 : 2.1} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
       <hemisphereLight args={[isNight ? "#26344f" : "#fff1d2", "#7b8067", isNight ? 0.5 : 1.1]} />
-      <RoomFurniture sceneId={look.background === "rich" ? "guzape_mansion_v1" : "nyanya_shared_room_v1"} />
+      <RoomFurniture sceneId={sceneId} />
       <Character look={look} onPosition={onPosition} moveTarget={moveTarget} showCrown />
       <Text position={[-3.65, 2.75, 3.72]} rotation={[0, 0, 0]} fontSize={0.14} color="#f4e5b5" anchorX="center">EXIT</Text>
       <Environment preset="apartment" environmentIntensity={isNight ? 0.28 : 1} />
@@ -696,7 +696,7 @@ export default function WorldHome({ look, sceneId, immersive = false, worldScene
               ? <StreetScene look={look} area={area} moveTarget={moveTarget} isNight={isNight} onPosition={(x, z) => setPosition({ x, z })} onNpcSelect={(npc) => { setMoveTarget({ x: npc.x - 1, z: npc.z }); onNpcSelect?.(npc); }} />
               : worldScene === "mosque"
                 ? <MosqueScene look={look} moveTarget={moveTarget} isNight={isNight} onPosition={(x, z) => setPosition({ x, z })} onNpcSelect={(npc) => { setMoveTarget({ x: npc.x - 1, z: npc.z }); onNpcSelect?.(npc); }} />
-                : <RoomScene look={look} moveTarget={moveTarget} isNight={isNight} onPosition={(x, z) => setPosition({ x, z })} />}
+                : <RoomScene look={look} sceneId={sceneId} moveTarget={moveTarget} isNight={isNight} onPosition={(x, z) => setPosition({ x, z })} />}
             <ClickGround
               width={worldScene === "home" ? (sceneId === "guzape_mansion_v1" ? 13 : 9) : worldScene === "mosque" ? 18 : 42}
               depth={worldScene === "home" ? (sceneId === "guzape_mansion_v1" ? 11 : 8) : worldScene === "mosque" ? 15 : 30}
