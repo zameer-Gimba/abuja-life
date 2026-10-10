@@ -57,11 +57,9 @@ export async function POST() {
       }
 
       const clock = await getGameClock(tx, player.id);
-      if (
-        typeof job.opensAt === "number" &&
-        !isWithinOpeningWindow(clock.minuteOfDay, job.opensAt, job.shiftHours ?? 1)
-      ) {
-        throw new Error(`JOB_NOT_OPEN_${job.opensAt}_${clock.minuteOfDay}`);
+      const opensAt = "opensAt" in job && typeof job.opensAt === "number" ? job.opensAt : undefined;
+      if (opensAt !== undefined && !isWithinOpeningWindow(clock.minuteOfDay, opensAt, job.shiftHours ?? 1)) {
+        throw new Error(`JOB_NOT_OPEN_${opensAt}_${clock.minuteOfDay}`);
       }
 
       const pay = BigInt(job.payPerShift ?? 0);
