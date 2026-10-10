@@ -124,7 +124,7 @@ export default function GameShell({ player }: { player: Player }) {
   const [phoneOpen, setPhoneOpen] = useState(false);
   const [activityBusy, setActivityBusy] = useState(false);
   const [activityToast, setActivityToast] = useState("");
-  const [selectedNpc, setSelectedNpc] = useState<{ name: string; role: string } | null>(null);
+  const [selectedNpc, setSelectedNpc] = useState<{ name: string; role: string; x: number; z: number } | null>(null);
 
   const cash = useMemo(() => Number(balance).toLocaleString(), [balance]);
   const displayedNetWorth = useMemo(() => Number(netWorth).toLocaleString(), [netWorth]);
@@ -297,7 +297,7 @@ export default function GameShell({ player }: { player: Player }) {
             immersive
             worldScene={worldScene}
             area={currentArea}
-            onNpcSelect={setSelectedNpc}
+            onNpcSelect={(npc) => { setSelectedNpc(npc); setMapOpen(false); }}
           />
         </div>
 
