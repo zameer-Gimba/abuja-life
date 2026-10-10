@@ -176,7 +176,7 @@ export default function GameShell({ player }: { player: Player }) {
   const currentJob = player.currentJob;
 
   async function refreshGameClock() {
-    await refreshGameClock();
+    await gameClock.refresh();
     window.dispatchEvent(new Event("game-clock-updated"));
   }
 
@@ -322,7 +322,7 @@ export default function GameShell({ player }: { player: Player }) {
       setHappiness(data.happiness);
       setActivityToast(data.message);
       setNotice(data.message);
-      await gameClock.refresh();
+      await refreshGameClock();
     } catch {
       setActivityToast("Could not connect to the rest service.");
     } finally {
