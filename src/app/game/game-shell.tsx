@@ -182,8 +182,8 @@ export default function GameShell({ player }: { player: Player }) {
   const currentJob = player.currentJob;
   const activeJobDetails = jobs.find((job) => job.title === activeJob);
   const activeJobWorkplace = activeJob ? JOB_WORKPLACE_AREAS[activeJob] : undefined;
-  const activeJobShiftOpen = activeJobDetails?.opensAt === undefined
-    || isWithinOpeningWindow(gameClock.minuteOfDay, activeJobDetails.opensAt, activeJobDetails.shiftHours, activeJobDetails.closesAt);
+  const activeJobShiftOpen = gameClock.loaded && (activeJobDetails?.opensAt === undefined
+    || isWithinOpeningWindow(gameClock.minuteOfDay, activeJobDetails.opensAt, activeJobDetails.shiftHours, activeJobDetails.closesAt));
   const activeJobRequirementsMet = Boolean(activeJobDetails
     && player.hustle >= (activeJobDetails.minHustle ?? 0)
     && player.intelligence >= (activeJobDetails.minIntelligence ?? 0)
@@ -663,28 +663,32 @@ export default function GameShell({ player }: { player: Player }) {
                     && player.intelligence >= (job.minIntelligence ?? 0)
                     && connection >= (job.minConnect ?? 0)
                     && (!job.requiresVehicle || hasVehicle);
-                  const shiftOpen = job.opensAt === undefined
-                    || isWithinOpeningWindow(gameClock.minuteOfDay, job.opensAt, job.shiftHours, job.closesAt);
-                  const shiftStatus = job.payPerShift <= 0
-                    ? "Commission payouts are coming soon"
-                    : !hasRequirements
-                      ? "Requirements not met"
-                      : !shiftOpen
-                        ? "Off shift · now " + gameClock.time
-                        : workplace && currentArea !== workplace
-                          ? "Travel to " + workplace
-                          : activeJob === job.title
-                            ? "Ready for this shift"
-                            : "Eligible to apply";
-                  const statusStyle = job.payPerShift <= 0
+                  const shiftOpen = gameClock.loaded && (job.opensAt === undefined
+                    || isWithinOpeningWindow(gameClock.minuteOfDay, job.opensAt, job.shiftHours, job.closesAt));
+                  const shiftStatus = !gameClock.loaded
+                    ? "Syncing in-game time…"
+                    : job.payPerShift <= 0
+                      ? "Commission payouts are coming soon"
+                      : !hasRequirements
+                        ? "Requirements not met"
+                        : !shiftOpen
+                          ? "Off shift · now " + gameClock.time
+                          : workplace && currentArea !== workplace
+                            ? "Travel to " + workplace
+                            : activeJob === job.title
+                              ? "Ready for this shift"
+                              : "Eligible to apply";
+                  const statusStyle = !gameClock.loaded
                     ? "bg-slate-100 text-slate-500"
-                    : !hasRequirements
-                      ? "bg-rose-50 text-rose-700"
-                      : !shiftOpen
-                        ? "bg-amber-50 text-amber-800"
-                        : workplace && currentArea !== workplace
-                          ? "bg-blue-50 text-blue-700"
-                          : "bg-emerald-50 text-emerald-700";
+                    : job.payPerShift <= 0
+                      ? "bg-slate-100 text-slate-500"
+                      : !hasRequirements
+                        ? "bg-rose-50 text-rose-700"
+                        : !shiftOpen
+                          ? "bg-amber-50 text-amber-800"
+                          : workplace && currentArea !== workplace
+                            ? "bg-blue-50 text-blue-700"
+                            : "bg-emerald-50 text-emerald-700";
                   const closingHour = job.closesAt ?? (job.opensAt === undefined ? undefined : job.opensAt + Math.max(job.shiftHours, 8));
                   const formatHour = (hour: number) => hour === 24 ? "24:00" : String(((hour % 24) + 24) % 24).padStart(2, "0") + ":00";
                   return <div key={job.title} className="rounded-2xl border border-slate-200 p-5">
@@ -715,7 +719,7 @@ export default function GameShell({ player }: { player: Player }) {
               <p className="mt-2 text-sm text-slate-400">Complete a shift to earn Game Naira and build your employment history.</p>
               {activeJobDetails?.payPerShift === 0 && <p className="mt-3 rounded-xl bg-white/10 px-4 py-3 text-sm font-semibold text-slate-300">This commission-based role is listed, but commission payouts are not available yet.</p>}
               {JOB_WORKPLACE_AREAS[activeJob] && <p className="mt-3 rounded-xl bg-white/10 px-4 py-3 text-sm font-semibold text-slate-200">Workplace: {JOB_WORKPLACE_AREAS[activeJob]}{currentArea === JOB_WORKPLACE_AREAS[activeJob] ? " · You are here" : " · You are currently in " + currentArea}</p>}
-              <button onClick={completeShift} disabled={jobLoading || !canCompleteActiveShift} className="mt-5 rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-50">{jobLoading ? "Processing..." : activeJobDetails?.payPerShift === 0 ? "Payout coming soon" : !activeJobDetails ? "Loading job…" : !activeJobRequirementsMet ? "Requirements not met" : !activeJobShiftOpen ? "Off shift · try later" : activeJobWorkplace && currentArea !== activeJobWorkplace ? `Travel to ${activeJobWorkplace}` : "Complete Shift"}</button>
+              <button onClick={completeShift} disabled={jobLoading || !canCompleteActiveShift} className="mt-5 rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-50">{jobLoading ? "Processing..." : !gameClock.loaded ? "Syncing clock…" : activeJobDetails?.payPerShift === 0 ? "Payout coming soon" : !activeJobDetails ? "Loading job…" : !activeJobRequirementsMet ? "Requirements not met" : !activeJobShiftOpen ? "Off shift · try later" : activeJobWorkplace && currentArea !== activeJobWorkplace ? `Travel to ${activeJobWorkplace}` : "Complete Shift"}</button>
             </div>}
           </div>}
           {view === "vehicles" && <VehiclePanel onUpdate={(data) => { setBalance(BigInt(data.walletBalance)); setNetWorth(BigInt(data.totalNetWorth)); setNotice(data.message); if (data.vehicle) { setHasVehicle(true); if (typeof data.vehicle.name === "string") setVehicleName(data.vehicle.name); if (typeof data.vehicle.fuel === "number") setVehicleFuel(data.vehicle.fuel); } if (typeof data.vehicleFuel === "number") setVehicleFuel(data.vehicleFuel); if (typeof data.drivingSkill === "number") setDrivingSkill(data.drivingSkill); }} />}
