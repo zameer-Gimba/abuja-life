@@ -131,6 +131,18 @@ export const JOBS = [
   { title: "Hype Man", category: "hustle", location: "Wuse 2", venue: "Hustle & Bustle Club", payPerShift: 10000, shiftHours: 5, opensAt: 22, closesAt: 6 },
 ]
 
+// Physical workplaces required before a paid shift can be completed.
+export const JOB_WORKPLACE_AREAS: Record<string, string> = {
+  "Flyer Distributor": "Wuse 2",
+  "Suya Spot Attendant": "Wuse 2",
+  "Shop Assistant": "Wuse 2",
+  "Restaurant Staff": "Jabi",
+  "Hotel Staff": "Central Area",
+  "Bank Teller": "Garki",
+  "Junior Civil Servant": "Garki",
+  "Hype Man": "Wuse 2",
+};
+
 // ── Universities ───────────────────────────────────────────
 export const UNIVERSITIES = [
   { name: "University of Abuja", short: "UniAbuja", type: "public", tier: 1, area: "Airport Road / Gwagwalada", intBonus: 15, auraBonus: 5, cost: 0, event: "asuu_strike" },
