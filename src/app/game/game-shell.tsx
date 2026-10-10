@@ -344,6 +344,7 @@ export default function GameShell({ player }: { player: Player }) {
             immersive
             worldScene={worldScene}
             area={currentArea}
+            timeOfDayMinutes={gameClock.minuteOfDay}
             onNpcSelect={(npc) => { setSelectedNpc(npc); setMapOpen(false); }}
           />
         </div>
@@ -554,7 +555,7 @@ export default function GameShell({ player }: { player: Player }) {
         <section className="min-w-0">
           {notice && <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800">{notice}</div>}
 
-          {view === "world" && <WorldHome sceneId={player.background === "rich" ? "guzape_mansion_v1" : player.homeSceneId} look={{ gender: player.gender, skinTone: player.skinTone, hairstyle: player.hairstyle, hairColor: player.hairColor, outfitTop: player.outfitTop, outfitBottom: player.outfitBottom, outfitShoes: player.outfitShoes, heightCm: player.heightCm, background: player.background }} />}
+          {view === "world" && <WorldHome sceneId={player.background === "rich" ? "guzape_mansion_v1" : player.homeSceneId} look={{ gender: player.gender, skinTone: player.skinTone, hairstyle: player.hairstyle, hairColor: player.hairColor, outfitTop: player.outfitTop, outfitBottom: player.outfitBottom, outfitShoes: player.outfitShoes, heightCm: player.heightCm, background: player.background }} timeOfDayMinutes={gameClock.minuteOfDay} />}
 
           {view === "map" && <div className="space-y-5">
             <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-7">
