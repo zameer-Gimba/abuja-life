@@ -300,39 +300,39 @@ export default function GameShell({ player }: { player: Player }) {
         </div>
 
         <div className="pointer-events-none absolute inset-x-0 top-3 flex justify-center px-3">
-          <div className="pointer-events-auto flex max-w-full items-center gap-3 rounded-full border border-white/70 bg-white/90 px-4 py-2 shadow-lg backdrop-blur-xl sm:gap-4 sm:px-6">
+          <div className="pointer-events-auto flex max-w-full items-center gap-3 rounded-2xl border border-white/15 bg-slate-950/80 px-4 py-2.5 text-white shadow-2xl backdrop-blur-xl sm:gap-4 sm:px-6">
             <div className="hidden text-sm font-bold sm:block">{currentPoi ?? currentArea} · Abuja</div>
             <span className="hidden h-5 w-px bg-slate-200 sm:block" />
-            <span className="text-xs font-semibold text-slate-600">Mood</span>
-            <span className="text-sm font-black text-emerald-600">{happiness >= 80 ? "Very Happy" : happiness >= 55 ? "Good" : "Low"}</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Mood</span>
+            <span className="text-sm font-black text-emerald-300">{happiness >= 80 ? "Very Happy" : happiness >= 55 ? "Good" : "Low"}</span>
             <span className="hidden h-5 w-px bg-slate-200 sm:block" />
-            <span className="text-xs font-semibold text-slate-500">Fitness {fitness}</span>
+            <span className="text-[10px] font-semibold text-slate-300">Fitness {fitness}</span>
             <span className="hidden h-5 w-px bg-slate-200 sm:block" />
-            <span className="whitespace-nowrap text-sm font-black">₦{cash}</span>
+            <span className="whitespace-nowrap text-sm font-black text-amber-300">₦{cash}</span>
             <button onClick={() => setActivityOpen(true)} className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-lg font-black text-white shadow-sm" aria-label="Open activities">+</button>
           </div>
         </div>
 
         <div className="absolute left-3 top-20 flex max-w-[185px] flex-col gap-2 sm:left-4 sm:max-w-[225px]">
-          <button onClick={() => performActivity("eat")} disabled={activityBusy} className="rounded-2xl border border-white/80 bg-white/90 p-3 text-left shadow-lg backdrop-blur transition hover:bg-white disabled:opacity-60">
+          <button onClick={() => performActivity("eat")} disabled={activityBusy} className="rounded-2xl border border-white/15 bg-slate-950/75 p-3 text-left text-white shadow-xl backdrop-blur transition hover:bg-slate-900 disabled:opacity-60">
             <span className="block text-xs font-black">Eat something</span>
-            <span className="mt-1 block text-[11px] text-slate-500">Meal costs ₦180 · restores health</span>
+            <span className="mt-1 block text-[11px] text-slate-300">Meal costs ₦180 · restores health</span>
           </button>
-          <div className="rounded-2xl border border-white/80 bg-white/90 p-3 shadow-lg backdrop-blur">
-            <div className="mb-2 flex items-center justify-between text-[11px] font-bold"><span>Health</span><span>{health}/100</span></div>
+          <div className="rounded-2xl border border-white/15 bg-slate-950/75 p-3 text-white shadow-xl backdrop-blur">
+            <div className="mb-2 flex items-center justify-between text-[11px] font-bold text-slate-200"><span>Health</span><span>{health}/100</span></div>
             <div className="h-1.5 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-rose-500 transition-all" style={{ width: `${health}%` }} /></div>
-            <div className="mb-2 mt-3 flex items-center justify-between text-[11px] font-bold"><span>Fitness</span><span>{fitness}/100</span></div>
+            <div className="mb-2 mt-3 flex items-center justify-between text-[11px] font-bold text-slate-200"><span>Fitness</span><span>{fitness}/100</span></div>
             <div className="h-1.5 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${fitness}%` }} /></div>
-            <div className="mb-2 mt-3 flex items-center justify-between text-[11px] font-bold"><span>Happiness</span><span>{happiness}/100</span></div>
+            <div className="mb-2 mt-3 flex items-center justify-between text-[11px] font-bold text-slate-200"><span>Happiness</span><span>{happiness}/100</span></div>
             <div className="h-1.5 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-amber-400 transition-all" style={{ width: `${happiness}%` }} /></div>
           </div>
         </div>
 
         <div className="absolute right-3 top-20 flex flex-col items-end gap-2 sm:right-4">
-          <div className="rounded-xl border border-white/70 bg-white/85 px-3 py-2 text-right shadow-md backdrop-blur">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Character</p>
+          <div className="rounded-2xl border border-white/15 bg-slate-950/80 px-3 py-2.5 text-right text-white shadow-xl backdrop-blur">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-300">PLAYER</p>
             <p className="text-xs font-black">{player.displayName}</p>
-            <p className="text-[10px] text-slate-500">Aura {aura} · Connection {connection}</p>{hasVehicle && <p className="mt-1 text-[10px] font-semibold text-emerald-700">Car fuel: {vehicleFuel} L</p>}
+            <p className="text-[10px] text-slate-300">Aura {aura} · Connection {connection}</p>{hasVehicle && <p className="mt-1 text-[10px] font-semibold text-emerald-300">Car fuel: {vehicleFuel} L</p>}
           </div>
           <button onClick={() => {
             if (worldScene === "home") {
@@ -347,7 +347,7 @@ export default function GameShell({ player }: { player: Player }) {
             } else {
               setMapOpen(true);
             }
-          }} className="rounded-xl bg-slate-950/90 px-3 py-2 text-xs font-black text-white shadow-lg transition hover:bg-slate-800">
+          }} className="rounded-xl border border-amber-300/40 bg-amber-300 px-3 py-2.5 text-xs font-black text-slate-950 shadow-xl transition hover:bg-amber-200">
             {worldScene === "home" ? "Step outside →" : worldScene === "mosque" ? "← Return to street" : currentArea === player.homeArea ? "← Enter home" : "Choose destination"}
           </button>
         </div>
