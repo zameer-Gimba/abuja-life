@@ -102,6 +102,9 @@ const stats = [
 export default function GameShell({ player }: { player: Player }) {
   const gameClock = useGameClock();
   const [currentArea, setCurrentArea] = useState(player.currentArea);
+  const [homeArea, setHomeArea] = useState(player.homeArea);
+  const [housingType, setHousingType] = useState(player.housingType);
+  const [homeSceneId, setHomeSceneId] = useState(player.background === "rich" ? "guzape_mansion_v1" : player.homeSceneId);
   const [menuOpen, setMenuOpen] = useState(false);
   const [notice, setNotice] = useState("You have entered Abuja.");
   const [view, setView] = useState("world");
@@ -122,7 +125,7 @@ export default function GameShell({ player }: { player: Player }) {
   const [connection, setConnection] = useState(player.connectLevel);
   const [hasVehicle, setHasVehicle] = useState(player.hasVehicle);
   const [vehicleFuel, setVehicleFuel] = useState(player.vehicleFuel);
-  const [worldScene, setWorldScene] = useState<"home" | "street" | "mosque">(player.currentArea === player.homeArea ? "home" : "street");
+  const [worldScene, setWorldScene] = useState<"home" | "street" | "mosque">(player.currentArea === homeArea ? "home" : "street");
   const [mapOpen, setMapOpen] = useState(false);
   const [currentPoi, setCurrentPoi] = useState<string | null>(null);
   const [journeyMessage, setJourneyMessage] = useState<string | null>(null);
@@ -299,7 +302,7 @@ export default function GameShell({ player }: { player: Player }) {
   }
 
   async function sleepAtHome() {
-    if (activityBusy || !gameClock.isNight || worldScene !== "home" || currentArea !== player.homeArea) return;
+    if (activityBusy || !gameClock.isNight || worldScene !== "home" || currentArea !== homeArea) return;
     setActivityBusy(true);
     setActivityToast("");
     try {
@@ -362,7 +365,7 @@ export default function GameShell({ player }: { player: Player }) {
         <div className="absolute inset-0">
           <WorldHome
             key={`${worldScene}:${currentArea}`}
-            sceneId={player.background === "rich" ? "guzape_mansion_v1" : player.homeSceneId}
+            sceneId={homeSceneId}
             look={{ gender: player.gender, skinTone: player.skinTone, hairstyle: player.hairstyle, hairColor: player.hairColor, outfitTop: player.outfitTop, outfitBottom: player.outfitBottom, outfitShoes: player.outfitShoes, heightCm: player.heightCm, background: player.background }}
             immersive
             worldScene={worldScene}
@@ -393,7 +396,7 @@ export default function GameShell({ player }: { player: Player }) {
             <span className="block text-xs font-black">Eat something</span>
             <span className="mt-1 block text-[11px] text-slate-300">Meal costs ₦180 · restores health</span>
           </button>
-          {worldScene === "home" && <button onClick={() => void sleepAtHome()} disabled={activityBusy || !gameClock.isNight || currentArea !== player.homeArea} className="rounded-2xl border border-amber-200/30 bg-slate-950/80 p-3 text-left text-white shadow-xl backdrop-blur transition hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-55">
+          {worldScene === "home" && <button onClick={() => void sleepAtHome()} disabled={activityBusy || !gameClock.isNight || currentArea !== homeArea} className="rounded-2xl border border-amber-200/30 bg-slate-950/80 p-3 text-left text-white shadow-xl backdrop-blur transition hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-55">
             <span className="block text-xs font-black">{gameClock.isNight ? "Sleep until 06:00" : "Rest after dark"}</span>
             <span className="mt-1 block text-[11px] text-slate-300">{gameClock.isNight ? "Rest at home and wake up in the morning" : "Sleep becomes available at night"}</span>
           </button>}
@@ -420,14 +423,14 @@ export default function GameShell({ player }: { player: Player }) {
             } else if (worldScene === "mosque") {
               setWorldScene("street");
               setCurrentPoi(null);
-            } else if (currentArea === player.homeArea) {
+            } else if (currentArea === homeArea) {
               setWorldScene("home");
               setCurrentPoi(null);
             } else {
               setMapOpen(true);
             }
           }} className="rounded-xl border border-amber-300/40 bg-amber-300 px-3 py-2.5 text-xs font-black text-slate-950 shadow-xl transition hover:bg-amber-200">
-            {worldScene === "home" ? "Step outside →" : worldScene === "mosque" ? "← Return to street" : currentArea === player.homeArea ? "← Enter home" : "Choose destination"}
+            {worldScene === "home" ? "Step outside →" : worldScene === "mosque" ? "← Return to street" : currentArea === homeArea ? "← Enter home" : "Choose destination"}
           </button>
         </div>
 
@@ -544,7 +547,7 @@ export default function GameShell({ player }: { player: Player }) {
         </div>}
 
         <nav aria-label="Life simulator controls" className="absolute bottom-3 left-1/2 z-30 flex max-w-[calc(100vw-20px)] -translate-x-1/2 items-center gap-1 rounded-[22px] border border-white/15 bg-slate-950/90 p-1.5 text-white shadow-2xl backdrop-blur-xl sm:bottom-5 sm:gap-2 sm:p-2">
-          <button onClick={() => { setWorldScene(currentArea === player.homeArea ? "home" : "street"); setCurrentPoi(null); setMapOpen(false); setActivityOpen(false); setPhoneOpen(false); }} className="flex min-w-[61px] flex-col items-center gap-1 rounded-2xl bg-emerald-400 px-3 py-2 text-slate-950 transition hover:bg-emerald-300 sm:min-w-[76px] sm:px-4"><Home size={18} /><span className="text-[10px] font-black">World</span></button>
+          <button onClick={() => { setWorldScene(currentArea === homeArea ? "home" : "street"); setCurrentPoi(null); setMapOpen(false); setActivityOpen(false); setPhoneOpen(false); }} className="flex min-w-[61px] flex-col items-center gap-1 rounded-2xl bg-emerald-400 px-3 py-2 text-slate-950 transition hover:bg-emerald-300 sm:min-w-[76px] sm:px-4"><Home size={18} /><span className="text-[10px] font-black">World</span></button>
           <button onClick={() => { setActivityOpen(false); setPhoneOpen(false); setMapOpen(true); }} className="flex min-w-[61px] flex-col items-center gap-1 rounded-2xl px-3 py-2 text-slate-300 transition hover:bg-white/10 hover:text-white sm:min-w-[76px] sm:px-4"><Map size={18} /><span className="text-[10px] font-bold">Map</span></button>
           <button onClick={() => { setPhoneOpen(true); setActivityOpen(false); }} className="flex min-w-[61px] flex-col items-center gap-1 rounded-2xl px-3 py-2 text-slate-300 transition hover:bg-white/10 hover:text-white sm:min-w-[76px] sm:px-4"><Smartphone size={18} /><span className="text-[10px] font-bold">Phone</span></button>
           <button onClick={() => { setActivityOpen(true); setPhoneOpen(false); }} className="flex min-w-[61px] flex-col items-center gap-1 rounded-2xl px-3 py-2 text-slate-300 transition hover:bg-white/10 hover:text-white sm:min-w-[76px] sm:px-4"><Activity size={18} /><span className="text-[10px] font-bold">Activities</span></button>
@@ -634,7 +637,17 @@ export default function GameShell({ player }: { player: Player }) {
             </div>}
           </div>}
           {view === "vehicles" && <VehiclePanel onUpdate={(data) => { setBalance(BigInt(data.walletBalance)); setNetWorth(BigInt(data.totalNetWorth)); setNotice(data.message); if (data.vehicle) { setHasVehicle(true); if (typeof data.vehicle.fuel === "number") setVehicleFuel(data.vehicle.fuel); } if (typeof data.vehicleFuel === "number") setVehicleFuel(data.vehicleFuel); }} />}\n          {view === "bank" && <BankPanel onUpdate={(b, message) => { setBalance(BigInt(b.walletBalance)); setNetWorth(BigInt(b.totalNetWorth)); setNotice(message); }} />}
-          {view === "property" && <PropertyPanel onUpdate={(data) => { setBalance(BigInt(data.walletBalance)); setNetWorth(BigInt(data.netWorth)); setCurrentArea(data.housing.currentArea); setNotice(data.message); }} />}
+          {view === "property" && <PropertyPanel onUpdate={(data) => {
+            setBalance(BigInt(data.walletBalance));
+            setNetWorth(BigInt(data.netWorth));
+            setCurrentArea(data.housing.currentArea);
+            setHomeArea(data.housing.homeArea);
+            setHousingType(data.housing.housingType);
+            if (typeof data.housing.homeSceneId === "string") setHomeSceneId(data.housing.homeSceneId);
+            setWorldScene("home");
+            setCurrentPoi(null);
+            setNotice(data.message);
+          }} />}
           {view !== "world" && view !== "map" && view !== "jobs" && view !== "property" && view !== "bank" && view !== "vehicles" && <div className="rounded-3xl border border-slate-200 bg-white p-7"><p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">{view}</p><h1 className="mt-2 text-3xl font-black capitalize">{view} is coming into the playable economy.</h1><p className="mt-4 max-w-2xl leading-7 text-slate-600">The dashboard shell is ready. This section will be connected to its server-authoritative game actions in the next build stages.</p></div>}
         </section>
 
@@ -644,7 +657,7 @@ export default function GameShell({ player }: { player: Player }) {
             <div className="mt-5 grid grid-cols-2 gap-2">{stats.map(([label,key]) => <div key={label} className="rounded-xl bg-slate-50 p-3"><p className="text-[10px] font-bold uppercase text-slate-400">{label}</p><p className="mt-1 text-lg font-black">{player[key]}</p></div>)}</div>
           </div>
           <div className="rounded-2xl bg-slate-950 p-5 text-white"><div className="flex items-center gap-2 text-blue-300"><Wallet size={18} /><span className="text-xs font-bold uppercase tracking-wider">Financial snapshot</span></div><p className="mt-4 text-3xl font-black">₦{cash}</p><div className="mt-4 grid grid-cols-2 gap-2 text-xs"><div className="rounded-xl bg-white/5 p-3"><p className="text-slate-400">Bank</p><p className="mt-1 font-bold">₦{Number(player.bankBalance).toLocaleString()}</p></div><div className="rounded-xl bg-white/5 p-3"><p className="text-slate-400">Net worth</p><p className="mt-1 font-bold">₦{displayedNetWorth}</p></div></div></div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5"><div className="flex items-center gap-2"><Home size={17} className="text-emerald-600" /><span className="font-bold">Home</span></div><p className="mt-3 text-lg font-black">{player.homeArea}</p><p className="text-sm text-slate-500">{player.housingType}</p><div className="mt-4 flex items-center gap-2 text-xs font-semibold text-slate-500"><Car size={14} /> {player.hasVehicle ? player.vehicleName ?? "Vehicle owned" : "No vehicle yet"}</div></div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-5"><div className="flex items-center gap-2"><Home size={17} className="text-emerald-600" /><span className="font-bold">Home</span></div><p className="mt-3 text-lg font-black">{homeArea}</p><p className="text-sm text-slate-500">{housingType}</p><div className="mt-4 flex items-center gap-2 text-xs font-semibold text-slate-500"><Car size={14} /> {player.hasVehicle ? player.vehicleName ?? "Vehicle owned" : "No vehicle yet"}</div></div>
         </aside>
       </div>
 
