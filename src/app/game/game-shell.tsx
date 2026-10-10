@@ -252,7 +252,7 @@ export default function GameShell({ player }: { player: Player }) {
     }
   }
 
-  async function performActivity(activity: "walk" | "dance" | "eat" | "call_mummy" | "greet_neighbour" | "pray_salah" | "perform_wudu" | "read_quran" | "give_sadaqah") {
+  async function performActivity(activity: "walk" | "dance" | "eat" | "call_mummy" | "greet_neighbour" | "pray_salah" | "perform_wudu" | "read_quran" | "give_sadaqah", targetName?: string) {
     if (activityBusy) return;
     setActivityBusy(true);
     setActivityToast("");
@@ -260,7 +260,7 @@ export default function GameShell({ player }: { player: Player }) {
       const response = await fetch("/api/game/activity", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ activity }),
+        body: JSON.stringify({ activity, ...(targetName ? { targetName } : {}) }),
       });
       const data = await response.json();
       if (!response.ok) {
@@ -379,7 +379,7 @@ export default function GameShell({ player }: { player: Player }) {
             </div>
             <p className="mt-3 rounded-xl bg-white/5 p-3 text-xs leading-5 text-slate-200">“{selectedNpc.role === "Shop owner" ? "Welcome. If you need provisions, there are a few good shops around here." : selectedNpc.role === "University student" ? "I'm trying to balance classes and life in Abuja. Have you explored the area yet?" : selectedNpc.role === "Neighbour" ? "This neighbourhood has its own rhythm. You will get to know familiar faces soon." : selectedNpc.role === "Ride-hailing driver" ? "Traffic changes quickly around Abuja. Plan your trip before the rush gets worse." : selectedNpc.role === "Office worker" ? "The workday moves fast here. I try to find time to enjoy the city too." : selectedNpc.role === "Local trader" ? "Business is all about knowing people and showing up consistently." : selectedNpc.role === "Creative freelancer" ? "There are always new ideas and people to meet around the city." : selectedNpc.role === "Community volunteer" ? "A good neighbourhood starts when people look out for each other." : "It is good to see you. May your day go well."}”</p>
             <div className="mt-3 grid grid-cols-2 gap-2">
-              <button onClick={() => { void performActivity("greet_neighbour"); setSelectedNpc(null); }} disabled={activityBusy} className="rounded-xl bg-emerald-400 px-3 py-2.5 text-xs font-black text-slate-950 transition hover:bg-emerald-300 disabled:opacity-50">{activityBusy ? "Saving…" : "Say hello"}</button>
+              <button onClick={() => { void performActivity("greet_neighbour", selectedNpc.name); setSelectedNpc(null); }} disabled={activityBusy} className="rounded-xl bg-emerald-400 px-3 py-2.5 text-xs font-black text-slate-950 transition hover:bg-emerald-300 disabled:opacity-50">{activityBusy ? "Saving…" : "Say hello"}</button>
               <button onClick={() => { setNotice(`${selectedNpc.name}: “${currentArea} has its own rhythm. Take your time and get to know the area.”`); setSelectedNpc(null); }} className="rounded-xl border border-white/15 bg-white/10 px-3 py-2.5 text-xs font-bold text-white transition hover:bg-white/15">Ask about the area</button>
             </div>
             <p className="mt-2 text-[10px] text-slate-500">Select a resident to start a conversation. Greetings update your saved game stats.</p>
