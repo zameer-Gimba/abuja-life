@@ -221,6 +221,7 @@ export default function GameShell({ player }: { player: Player }) {
         setJobNotice(`${data.message} Career performance +${data.performanceGain}.`);
       } else {
         setJobNotice(data.error ?? "Could not complete shift.");
+        if (data.requiredArea) setJobNotice(data.error + " Use the Map to travel there, then return to Jobs.");
       }
     } catch {
       setJobNotice("Could not connect to the jobs system.");
