@@ -10,7 +10,7 @@ const transport = [
   ["Bus Stop", "Share a commercial car.", Map],
   ["Keke", "Tricycle transport around the city.", Car],
   ["Metro", "Use the Abuja light rail.", Zap],
-  ["Bolt / Uber", "Comfortable ride-hailing.", Compass],
+  ["Bolt / inDrive", "Comfortable ride-hailing.", Compass],
   ["One Chance", "A danger event to avoid.", ShieldCheck],
 ] as const;
 

@@ -37,10 +37,10 @@ export async function POST(request: Request) {
 
       const activeRentals = await tx.property.findMany({
         where: { tenantId: playerId, isForRent: true, isOccupied: true },
-        select: { id: true, name: true, annualRent: true, createdAt: true },
+        select: { id: true, name: true, area: true, type: true, annualRent: true, createdAt: true },
       });
 
-      const alreadyLivesHere = activeRentals.some((rental) => rental.name === property.name);
+      const alreadyLivesHere = activeRentals.some((rental) => rental.name === property.name && rental.area === property.area && rental.type === property.type);
       if (alreadyLivesHere) throw new Error("ALREADY_CURRENT_HOME");
 
       const occupied = await tx.property.findFirst({
