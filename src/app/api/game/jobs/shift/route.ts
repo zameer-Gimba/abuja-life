@@ -58,8 +58,12 @@ export async function POST() {
 
       const clock = await getGameClock(tx, player.id);
       const opensAt = "opensAt" in job && typeof job.opensAt === "number" ? job.opensAt : undefined;
-      if (opensAt !== undefined && !isWithinOpeningWindow(clock.minuteOfDay, opensAt, job.shiftHours ?? 1)) {
-        throw new Error(`JOB_NOT_OPEN_${opensAt}_${clock.minuteOfDay}`);
+      const closesAt = "closesAt" in job && typeof job.closesAt === "number" ? job.closesAt : undefined;
+      if (
+        opensAt !== undefined &&
+        !isWithinOpeningWindow(clock.minuteOfDay, opensAt, job.shiftHours ?? 1, closesAt)
+      ) {
+        throw new Error(`JOB_NOT_OPEN_${opensAt}_${closesAt ?? -1}_${clock.minuteOfDay}`);
       }
 
       const pay = BigInt(job.payPerShift ?? 0);
@@ -164,13 +168,19 @@ export async function POST() {
       const area = code.slice("WORKPLACE_AREA:".length);
       return NextResponse.json({ error: `Travel to ${area} before starting this shift.`, requiredArea: area }, { status: 400 });
     }
-    const notOpen = code.match(/^JOB_NOT_OPEN_(\d+)_(\d+)$/);
+    const notOpen = code.match(/^JOB_NOT_OPEN_(\d+)_(-?\d+)_(\d+)$/);
     if (notOpen) {
       const opensAt = Number(notOpen[1]);
-      const currentTime = formatGameTime(Number(notOpen[2]));
+      const configuredClose = Number(notOpen[2]);
+      const shiftHours = Math.max(1, Number(JOBS.find((job) => job.title === "Hype Man")?.shiftHours ?? 1));
+      const closesAt = configuredClose >= 0 ? configuredClose : (opensAt + Math.max(shiftHours, 8)) % 24;
+      const currentTime = formatGameTime(Number(notOpen[3]));
+      const openingTime = `${String(opensAt).padStart(2, "0")}:00`;
+      const closingTime = `${String(closesAt).padStart(2, "0")}:00`;
       return NextResponse.json({
-        error: `This shift opens at ${String(opensAt).padStart(2, "0")}:00. Current in-game time is ${currentTime}.`,
+        error: `This shift runs ${openingTime}–${closingTime}. Current in-game time is ${currentTime}.`,
         opensAt,
+        closesAt,
         currentTime,
       }, { status: 400 });
     }
