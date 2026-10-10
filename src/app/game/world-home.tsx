@@ -531,15 +531,38 @@ function StreetScene({ look, area, onPosition, moveTarget, onNpcSelect, isNight 
     { x: 10.5, z: 9.4, height: 4.3, width: 5.5, color: "#d0af8d", label: "LAUNDRY" },
   ];
   const vehicles = isQuiet ? [
-    { startX: -10, z: -1.35, speed: 1.6, color: "#ba3f37", roofColor: "#3b464f" },
-    { startX: 7, z: 1.45, speed: -1.3, color: "#477c65", roofColor: "#384b51" },
+    { startX: -10, z: -1.35, speed: 1.2, color: "#ba3f37", roofColor: "#3b464f" },
+  ] : isNight ? isWuse ? [
+    { startX: -10, z: -1.35, speed: 1.8, color: "#ba3f37", roofColor: "#3b464f" },
+    { startX: 3, z: -1.35, speed: 1.4, color: "#e2bd45", roofColor: "#475b63" },
+    { startX: 9, z: 1.45, speed: -1.6, color: "#477c65", roofColor: "#384b51" },
+  ] : [
+    { startX: -10, z: -1.35, speed: 1.2, color: "#ba3f37", roofColor: "#3b464f" },
+    { startX: 9, z: 1.45, speed: -1.1, color: "#477c65", roofColor: "#384b51" },
   ] : [
     { startX: -10, z: -1.35, speed: 2.2, color: "#ba3f37", roofColor: "#3b464f" },
     { startX: 3, z: -1.35, speed: isCentral ? 2.6 : 1.5, color: "#e2bd45", roofColor: "#475b63" },
     { startX: 9, z: 1.45, speed: -1.8, color: "#477c65", roofColor: "#384b51" },
     { startX: -4, z: 1.45, speed: -2.5, color: "#ece6d8", roofColor: "#536778" },
   ];
-  const people: AmbientPedestrianProps[] = isQuiet ? [
+  const nightCrowd: AmbientPedestrianProps[] = isWuse ? [
+    { x: -8, z: -5.3, shirt: "#276f58", trousers: "#26364a", skin: "#75462f", hair: "#181513", walking: true },
+    { x: -3, z: -5.4, shirt: "#b64b45", trousers: "#182c3e", skin: "#8d5a3b", hair: "#171514", gender: "female", hairStyle: "natural_puff", waving: true },
+    { x: 4, z: -5.35, shirt: "#e4ba37", trousers: "#334b39", skin: "#603923", hair: "#171514", walking: true },
+    { x: 8, z: 5.25, shirt: "#293d7a", trousers: "#d2b88d", skin: "#a66e49", hair: "#171514", gender: "female", hairStyle: "braids", waving: true },
+    { x: 2, z: 5.35, shirt: "#87456d", trousers: "#302f38", skin: "#75462f", hair: "#171514", walking: true },
+    { x: 11, z: -5.25, shirt: "#9b6a2f", trousers: "#26374b", skin: "#8d5a3b", hair: "#171514", waving: true },
+  ] : isQuiet ? [
+    { x: 6, z: 5.25, shirt: "#293d7a", trousers: "#d2b88d", skin: "#a66e49", hair: "#171514", gender: "female", hairStyle: "braids", waving: false },
+  ] : isCentral ? [
+    { x: -8, z: -5.3, shirt: "#276f58", trousers: "#26364a", skin: "#75462f", hair: "#181513", walking: false },
+    { x: 6, z: 5.25, shirt: "#293d7a", trousers: "#d2b88d", skin: "#a66e49", hair: "#171514", gender: "female", hairStyle: "braids", waving: true },
+  ] : [
+    { x: -8, z: -5.3, shirt: "#276f58", trousers: "#26364a", skin: "#75462f", hair: "#181513", walking: false },
+    { x: 6, z: 5.25, shirt: "#293d7a", trousers: "#d2b88d", skin: "#a66e49", hair: "#171514", gender: "female", hairStyle: "braids", waving: true },
+    { x: 2, z: 5.35, shirt: "#87456d", trousers: "#302f38", skin: "#75462f", hair: "#171514" },
+  ];
+  const dayCrowd: AmbientPedestrianProps[] = isQuiet ? [
     { x: -8, z: -5.3, shirt: "#276f58", trousers: "#26364a", skin: "#75462f", hair: "#181513", walking: false },
     { x: 6, z: 5.25, shirt: "#293d7a", trousers: "#d2b88d", skin: "#a66e49", hair: "#171514", gender: "female", hairStyle: "braids", waving: true },
   ] : isWuse ? [
@@ -559,6 +582,7 @@ function StreetScene({ look, area, onPosition, moveTarget, onNpcSelect, isNight 
     { x: -5, z: 5.35, shirt: "#166b70", trousers: "#26374b", skin: "#8d5a3b", hair: "#171514", gender: "female", hairStyle: "natural_puff", walking: true },
     { x: 2, z: 5.35, shirt: "#87456d", trousers: "#302f38", skin: "#75462f", hair: "#171514" },
   ];
+  const people = isNight ? nightCrowd : dayCrowd;
   const streetLabel = isWuse ? "AMINU KANO CRESCENT · WUSE 2" : area.toUpperCase() + " · ABUJA";
 
   return (
@@ -595,7 +619,7 @@ function StreetScene({ look, area, onPosition, moveTarget, onNpcSelect, isNight 
         <mesh position={[0.54, 2.45, 0]}><boxGeometry args={[0.25, 0.12, 0.18]} /><meshStandardMaterial color="#f2df9f" emissive="#f2df9f" emissiveIntensity={0.3} /></mesh>
       </group>
       {vehicles.map((vehicle) => <MovingCar key={vehicle.startX + ":" + vehicle.z} {...vehicle} />)}
-      {!isQuiet && <><KekeNapep startX={-2} z={-1.32} speed={1.25} /><KekeNapep startX={12} z={1.42} speed={-1.05} /></>}
+      {!isQuiet && (!isNight || isWuse || isCentral) && <><KekeNapep startX={-2} z={-1.32} speed={isNight ? 0.95 : 1.25} /><KekeNapep startX={12} z={1.42} speed={isNight ? -0.8 : -1.05} /></>}
       {people.map((person, index) => <AmbientPedestrian key={index} {...person} name={["Amina Yusuf", "Tunde Okafor", "Zainab Bello", "Emeka Nwosu", "Hauwa Musa", "Chinedu Eze", "Maryam Sani", "Sadiq Abdullahi"][index % 8]} role={["Shop owner", "University student", "Neighbour", "Ride-hailing driver", "Office worker", "Local trader", "Creative freelancer", "Community volunteer"][index % 8]} onSelect={onNpcSelect} />)}
       <Character look={look} onPosition={onPosition} moveTarget={moveTarget} streetMode showCrown />
       <Text position={[0, 3.8, -5.4]} rotation={[0, 0, 0]} fontSize={0.38} color="#153c37" anchorX="center">{streetLabel}</Text>
