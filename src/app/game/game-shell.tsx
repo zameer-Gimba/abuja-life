@@ -45,6 +45,8 @@ type Player = {
   homeArea: string;
   housingType: string;
   currentJob: string | null;
+  shiftsCompleted: number;
+  performanceScore: number;
   hasVehicle: boolean;
   vehicleName: string | null;
   vehicleType: string | null;
@@ -109,6 +111,8 @@ export default function GameShell({ player }: { player: Player }) {
   const [jobLoading, setJobLoading] = useState(false);
   const [jobNotice, setJobNotice] = useState("");
   const [activeJob, setActiveJob] = useState(player.currentJob);
+  const [shiftsCompleted, setShiftsCompleted] = useState(player.shiftsCompleted);
+  const [performanceScore, setPerformanceScore] = useState(player.performanceScore);
   const [fitness, setFitness] = useState(player.fitness);
   const [health, setHealth] = useState(player.health);
   const [happiness, setHappiness] = useState(player.happiness);
@@ -212,7 +216,9 @@ export default function GameShell({ player }: { player: Player }) {
       if (response.ok) {
         setBalance(BigInt(data.walletBalance));
         setNetWorth(BigInt(data.totalNetWorth));
-        setJobNotice(data.message);
+        setShiftsCompleted(data.shiftsCompleted);
+        setPerformanceScore(data.performanceScore);
+        setJobNotice(`${data.message} Career performance +${data.performanceGain}.`);
       } else {
         setJobNotice(data.error ?? "Could not complete shift.");
       }
@@ -569,6 +575,11 @@ export default function GameShell({ player }: { player: Player }) {
               <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
                 <div><p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Abuja Jobs Board</p><h1 className="mt-2 text-3xl font-black">Find your hustle.</h1><p className="mt-2 text-sm text-slate-500">Jobs use your skills, location, vehicle status and Connection.</p></div>
                 <button onClick={loadJobs} disabled={jobLoading} className="rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white">{jobLoading ? "Loading..." : "Refresh jobs"}</button>
+              </div>
+              <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl bg-slate-950 p-4 text-white"><p className="text-[10px] font-bold uppercase tracking-wider text-blue-300">Shifts completed</p><p className="mt-1 text-2xl font-black">{shiftsCompleted}</p></div>
+                <div className="rounded-2xl bg-emerald-50 p-4 text-emerald-950"><p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Career performance</p><p className="mt-1 text-2xl font-black">{performanceScore}</p></div>
+                <div className="col-span-2 rounded-2xl border border-slate-200 p-4 sm:col-span-1"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Career tip</p><p className="mt-1 text-xs leading-5 text-slate-600">Each completed shift adds to your work record and improves your performance score.</p></div>
               </div>
               {jobNotice && <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800">{jobNotice}</div>}
               <div className="mt-6 grid gap-3 md:grid-cols-2">
