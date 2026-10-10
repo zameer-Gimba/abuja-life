@@ -630,8 +630,8 @@ export default function GameShell({ player }: { player: Player }) {
                   const workplace = JOB_WORKPLACE_AREAS[job.title];
                   const hasRequirements = player.hustle >= (job.minHustle ?? 0)
                     && player.intelligence >= (job.minIntelligence ?? 0)
-                    && player.connectLevel >= (job.minConnect ?? 0)
-                    && (!job.requiresVehicle || player.hasVehicle);
+                    && connection >= (job.minConnect ?? 0)
+                    && (!job.requiresVehicle || hasVehicle);
                   const shiftOpen = job.opensAt === undefined
                     || isWithinOpeningWindow(gameClock.minuteOfDay, job.opensAt, job.shiftHours, job.closesAt);
                   const shiftStatus = !hasRequirements
@@ -679,7 +679,8 @@ export default function GameShell({ player }: { player: Player }) {
               <button onClick={completeShift} disabled={jobLoading} className="mt-5 rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white">{jobLoading ? "Processing..." : "Complete Shift"}</button>
             </div>}
           </div>}
-          {view === "vehicles" && <VehiclePanel onUpdate={(data) => { setBalance(BigInt(data.walletBalance)); setNetWorth(BigInt(data.totalNetWorth)); setNotice(data.message); if (data.vehicle) { setHasVehicle(true); if (typeof data.vehicle.fuel === "number") setVehicleFuel(data.vehicle.fuel); } if (typeof data.vehicleFuel === "number") setVehicleFuel(data.vehicleFuel); }} />}\n          {view === "bank" && <BankPanel onUpdate={(b, message) => { setBalance(BigInt(b.walletBalance)); setNetWorth(BigInt(b.totalNetWorth)); setNotice(message); }} />}
+          {view === "vehicles" && <VehiclePanel onUpdate={(data) => { setBalance(BigInt(data.walletBalance)); setNetWorth(BigInt(data.totalNetWorth)); setNotice(data.message); if (data.vehicle) { setHasVehicle(true); if (typeof data.vehicle.fuel === "number") setVehicleFuel(data.vehicle.fuel); } if (typeof data.vehicleFuel === "number") setVehicleFuel(data.vehicleFuel); }} />}
+          {view === "bank" && <BankPanel onUpdate={(b, message) => { setBalance(BigInt(b.walletBalance)); setNetWorth(BigInt(b.totalNetWorth)); setNotice(message); }} />}
           {view === "property" && <PropertyPanel onUpdate={(data) => {
             setBalance(BigInt(data.walletBalance));
             setNetWorth(BigInt(data.netWorth));
