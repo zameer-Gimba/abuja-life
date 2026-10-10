@@ -112,6 +112,8 @@ export async function POST() {
         totalNetWorth: netWorthAfter.toString(),
         pay: pay.toString(),
         performanceGain,
+        performanceScore: player.performanceScore + performanceGain,
+        shiftsCompleted: player.shiftsCompleted + 1,
       };
     });
 
