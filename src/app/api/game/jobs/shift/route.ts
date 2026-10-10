@@ -16,6 +16,7 @@ export async function POST() {
         select: {
           id: true,
           currentJob: true,
+          currentArea: true,
           walletBalance: true,
           bankBalance: true,
           savingsBalance: true,
