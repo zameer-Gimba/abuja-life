@@ -99,6 +99,47 @@ const stats = [
 ] as const;
 
 export default function GameShell({ player }: { player: Player }) {
+  const [gameMinutes, setGameMinutes] = useState(480);
+  const [gameDay, setGameDay] = useState(1);
+  const [clockReady, setClockReady] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem("abuja-life-clock-" + player.id);
+      if (saved) {
+        const parsed = JSON.parse(saved) as { minutes?: number; day?: number };
+        if (Number.isFinite(parsed.minutes)) setGameMinutes(Math.max(0, Math.min(1439, Number(parsed.minutes))));
+        if (Number.isFinite(parsed.day)) setGameDay(Math.max(1, Number(parsed.day)));
+      }
+    } catch { /* Use a fresh game clock if saved state is unavailable. */ }
+    setClockReady(true);
+  }, [player.id]);
+
+  useEffect(() => {
+    if (!clockReady) return;
+    try { window.localStorage.setItem("abuja-life-clock-" + player.id, JSON.stringify({ minutes: gameMinutes, day: gameDay })); } catch { /* Best-effort local save. */ }
+  }, [clockReady, gameMinutes, gameDay, player.id]);
+
+  useEffect(() => {
+    if (!clockReady) return;
+    const timer = window.setInterval(() => {
+      const next = gameMinutes + 1;
+      setGameMinutes(next % 1440);
+      if (next >= 1440) setGameDay((day) => day + 1);
+    }, 60000);
+    return () => window.clearInterval(timer);
+  }, [clockReady, gameMinutes]);
+
+  function advanceGameTime(minutes: number) {
+    if (!Number.isFinite(minutes) || minutes <= 0) return;
+    const total = gameMinutes + Math.floor(minutes);
+    setGameDay((day) => day + Math.floor(total / 1440));
+    setGameMinutes(total % 1440);
+  }
+
+  const gameTimeLabel = String(Math.floor(gameMinutes / 60)).padStart(2, "0") + ":" + String(gameMinutes % 60).padStart(2, "0");
+  const timeOfDay = gameMinutes < 360 ? "Night" : gameMinutes < 720 ? "Morning" : gameMinutes < 1020 ? "Afternoon" : gameMinutes < 1260 ? "Evening" : "Night";
+
   const [currentArea, setCurrentArea] = useState(player.currentArea);
   const [menuOpen, setMenuOpen] = useState(false);
   const [notice, setNotice] = useState("You have entered Abuja.");
@@ -218,6 +259,7 @@ export default function GameShell({ player }: { player: Player }) {
         setNetWorth(BigInt(data.totalNetWorth));
         setShiftsCompleted(data.shiftsCompleted);
         setPerformanceScore(data.performanceScore);
+        advanceGameTime(Number(data.shiftHours ?? 8) * 60);
         setJobNotice(`${data.message} Career performance +${data.performanceGain}.`);
       } else {
         setJobNotice(data.error ?? "Could not complete shift.");
@@ -269,6 +311,7 @@ export default function GameShell({ player }: { player: Player }) {
       // Keep the route transition short and visible instead of switching scenes instantly.
       await new Promise<void>((resolve) => window.setTimeout(resolve, 1350));
       setCurrentArea(data.currentArea);
+      advanceGameTime(Number(data.duration ?? 10));
       setBalance(BigInt(data.walletBalance));
       setNetWorth(BigInt(data.totalNetWorth));
       if (typeof data.fitness === "number") setFitness(data.fitness);
@@ -522,6 +565,11 @@ export default function GameShell({ player }: { player: Player }) {
   }
 
   return (
+    <div className="fixed left-1/2 top-3 z-[80] flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-white/20 bg-slate-950/90 px-4 py-2 text-white shadow-xl backdrop-blur-md" aria-label="In-game time">
+      <span className="text-xs font-bold uppercase tracking-wider text-amber-300">Day {gameDay}</span>
+      <span className="text-lg font-black tabular-nums">{gameTimeLabel}</span>
+      <span className="hidden text-xs font-semibold text-slate-300 sm:inline">{timeOfDay}</span>
+    </div>
     <main className="min-h-screen bg-slate-100 text-slate-950">
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-[1500px] items-center justify-between px-4 py-3 sm:px-6">
