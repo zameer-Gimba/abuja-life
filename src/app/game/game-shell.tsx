@@ -470,7 +470,7 @@ export default function GameShell({ player }: { player: Player }) {
           <button onClick={() => { setPhoneOpen(true); setActivityOpen(false); }} className="flex min-w-[61px] flex-col items-center gap-1 rounded-2xl px-3 py-2 text-slate-300 transition hover:bg-white/10 hover:text-white sm:min-w-[76px] sm:px-4"><Smartphone size={18} /><span className="text-[10px] font-bold">Phone</span></button>
           <button onClick={() => { setActivityOpen(true); setPhoneOpen(false); }} className="flex min-w-[61px] flex-col items-center gap-1 rounded-2xl px-3 py-2 text-slate-300 transition hover:bg-white/10 hover:text-white sm:min-w-[76px] sm:px-4"><Activity size={18} /><span className="text-[10px] font-bold">Activities</span></button>
         </nav>
-        <div className="pointer-events-none absolute bottom-[86px] left-3 hidden rounded-xl border border-white/15 bg-slate-950/75 px-3 py-2 text-[11px] font-semibold text-white/80 shadow-lg backdrop-blur sm:bottom-5 sm:left-5 sm:block">W A S D <span className="text-white/40">/</span> Arrow keys <span className="text-white/40">·</span> Click ground to walk</div>
+        <div className="pointer-events-none absolute bottom-[86px] left-3 hidden rounded-xl border border-white/15 bg-slate-950/75 px-3 py-2 text-[11px] font-semibold text-white/80 shadow-lg backdrop-blur sm:bottom-5 sm:left-5 sm:block">W A S D <span className="text-white/40">/</span> Arrow keys <span className="text-white/40">·</span> Click ground to walk <span className="text-white/40">·</span> Tap residents to talk</div>
       </main>
     );
   }
