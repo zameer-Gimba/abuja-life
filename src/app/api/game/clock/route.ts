@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { getGameClock, formatGameTime } from "@/lib/game-clock";
+import { formatGameTime, getGameClock } from "@/lib/game-clock";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -10,7 +10,11 @@ export async function GET() {
   if (!playerId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-    const clock = await getGameClock(db, playerId);
+    const clock = await db.$transaction(async (tx) => {
+      await tx.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "players" WHERE "id" = ${playerId} FOR UPDATE`;
+      return getGameClock(tx, playerId);
+    });
+
     return NextResponse.json({
       ...clock,
       time: formatGameTime(clock.minuteOfDay),
