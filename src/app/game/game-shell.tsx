@@ -124,6 +124,7 @@ export default function GameShell({ player }: { player: Player }) {
   const [phoneOpen, setPhoneOpen] = useState(false);
   const [activityBusy, setActivityBusy] = useState(false);
   const [activityToast, setActivityToast] = useState("");
+  const [selectedNpc, setSelectedNpc] = useState<{ name: string; role: string } | null>(null);
 
   const cash = useMemo(() => Number(balance).toLocaleString(), [balance]);
   const displayedNetWorth = useMemo(() => Number(netWorth).toLocaleString(), [netWorth]);
@@ -296,6 +297,7 @@ export default function GameShell({ player }: { player: Player }) {
             immersive
             worldScene={worldScene}
             area={currentArea}
+            onNpcSelect={setSelectedNpc}
           />
         </div>
 
@@ -364,6 +366,24 @@ export default function GameShell({ player }: { player: Player }) {
               <button onClick={() => void performActivity("give_sadaqah")} disabled={activityBusy} className="w-full rounded-lg bg-white px-2.5 py-2 text-left text-[11px] font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50">Give Sadaqah · ₦100</button>
             </div>
           </div>
+        </div>}
+
+        {selectedNpc && <div className="absolute bottom-[92px] left-1/2 z-40 w-[min(92vw,380px)] -translate-x-1/2 sm:bottom-24">
+          <section className="rounded-[24px] border border-white/20 bg-slate-950/95 p-4 text-white shadow-2xl backdrop-blur-xl">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-400 text-sm font-black text-slate-950">{selectedNpc.name.split(" ").map(part => part[0]).slice(0, 2).join("")}</div>
+                <div><p className="text-[9px] font-black uppercase tracking-[0.18em] text-emerald-300">Neighbourhood contact</p><h2 className="mt-0.5 text-base font-black">{selectedNpc.name}</h2><p className="text-xs text-slate-400">{selectedNpc.role} · {currentArea}</p></div>
+              </div>
+              <button onClick={() => setSelectedNpc(null)} aria-label="Close conversation" className="rounded-full bg-white/10 p-2 text-slate-300 hover:bg-white/20"><X size={16} /></button>
+            </div>
+            <p className="mt-3 rounded-xl bg-white/5 p-3 text-xs leading-5 text-slate-200">“Good day. It’s always nice to know the people around your neighbourhood.”</p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button onClick={() => { void performActivity("greet_neighbour"); setSelectedNpc(null); }} disabled={activityBusy} className="rounded-xl bg-emerald-400 px-3 py-2.5 text-xs font-black text-slate-950 transition hover:bg-emerald-300 disabled:opacity-50">{activityBusy ? "Saving…" : "Say hello"}</button>
+              <button onClick={() => { setNotice(`${selectedNpc.name}: “${currentArea} has its own rhythm. Take your time and get to know the area.”`); setSelectedNpc(null); }} className="rounded-xl border border-white/15 bg-white/10 px-3 py-2.5 text-xs font-bold text-white transition hover:bg-white/15">Ask about the area</button>
+            </div>
+            <p className="mt-2 text-[10px] text-slate-500">Select a resident to start a conversation. Greetings update your saved game stats.</p>
+          </section>
         </div>}
 
         {activityToast && <div role="status" className="absolute left-1/2 top-[86px] z-30 flex w-[min(92vw,460px)] -translate-x-1/2 items-start justify-between gap-3 rounded-2xl border border-emerald-200 bg-white/95 px-4 py-3 text-sm font-semibold text-slate-800 shadow-xl backdrop-blur">
