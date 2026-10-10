@@ -65,6 +65,8 @@ export async function POST() {
       return {
         health,
         happiness,
+        healthRecovered: health - player.health,
+        happinessRecovered: happiness - player.happiness,
         minutesSlept: minutesUntilMorning,
         minuteOfDay: nextClock.minuteOfDay,
         dayNumber: nextClock.dayNumber,
@@ -73,7 +75,7 @@ export async function POST() {
 
     return NextResponse.json({
       ...result,
-      message: `You rested at home and woke up at 06:00. Health +${Math.min(12, 100 - (result.health - 12))}; happiness +${Math.min(5, 100 - (result.happiness - 5))}.`,
+      message: `You rested at home and woke up at 06:00. Health +${result.healthRecovered}; happiness +${result.happinessRecovered}.`,
     });
   } catch (error) {
     const code = error instanceof Error ? error.message : "UNKNOWN";
