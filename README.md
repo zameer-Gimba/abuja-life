@@ -68,7 +68,7 @@ Do not commit real secrets or production database credentials.
 
 ## Verification
 
-The repository's GitHub Actions workflow installs dependencies, generates the Prisma client and runs `npm run build) on pushes to `develop` and `main`, and on pull requests targeting those branches.
+The repository's GitHub Actions workflow installs dependencies, generates the Prisma client and runs `npm run build` on pushes to `develop` and `main`, and on pull requests targeting those branches.
 
 ## Product direction
 
