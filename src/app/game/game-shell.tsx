@@ -126,6 +126,8 @@ export default function GameShell({ player }: { player: Player }) {
   const [activityToast, setActivityToast] = useState("");
   const [selectedNpc, setSelectedNpc] = useState<{ name: string; role: string; x: number; z: number } | null>(null);
   const [npcHistory, setNpcHistory] = useState<{ greetings: number; lastSeenAt: string } | null>(null);
+  const [savedContacts, setSavedContacts] = useState<Array<{ name: string; greetings: number; lastSeenAt: string }>>([]);
+  const [contactsLoading, setContactsLoading] = useState(false);
 
   useEffect(() => {
     if (!selectedNpc) {
@@ -144,6 +146,20 @@ export default function GameShell({ player }: { player: Player }) {
       .catch(() => { if (active) setNpcHistory({ greetings: 0, lastSeenAt: "" }); });
     return () => { active = false; };
   }, [selectedNpc?.name]);
+
+  useEffect(() => {
+    if (!phoneOpen) return;
+    let active = true;
+    setContactsLoading(true);
+    fetch("/api/game/social")
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("Contacts unavailable")))
+      .then((data: { contacts?: Array<{ name: string; greetings: number; lastSeenAt: string }> }) => {
+        if (active) setSavedContacts(data.contacts ?? []);
+      })
+      .catch(() => { if (active) setSavedContacts([]); })
+      .finally(() => { if (active) setContactsLoading(false); });
+    return () => { active = false; };
+  }, [phoneOpen]);
 
   const cash = useMemo(() => Number(balance).toLocaleString(), [balance]);
   const displayedNetWorth = useMemo(() => Number(netWorth).toLocaleString(), [netWorth]);
@@ -600,8 +616,12 @@ export default function GameShell({ player }: { player: Player }) {
             <button onClick={() => void performActivity("call_mummy")} disabled={activityBusy} className="flex w-full items-center gap-3 rounded-2xl bg-slate-50 p-4 text-left hover:bg-emerald-50"><PhoneCall className="text-emerald-600" size={20} /><span><span className="block text-sm font-black">Call Mummy</span><span className="block text-xs text-slate-500">Family contact · in-game only</span></span></button>
             <button onClick={() => { setPhoneOpen(false); openView("map"); }} className="flex w-full items-center gap-3 rounded-2xl bg-slate-50 p-4 text-left hover:bg-blue-50"><Map className="text-blue-600" size={20} /><span><span className="block text-sm font-black">Find a place</span><span className="block text-xs text-slate-500">Open Abuja destinations</span></span></button>
           </div>
+          <div className="mt-5">
+            <div className="flex items-center justify-between"><h3 className="text-sm font-black">Contacts</h3><span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{savedContacts.length} saved</span></div>
+            {contactsLoading ? <p className="mt-3 rounded-xl bg-slate-50 p-3 text-xs text-slate-500">Loading your connections…</p> : savedContacts.length ? <div className="mt-2 max-h-44 space-y-2 overflow-y-auto">{savedContacts.map((contact) => <div key={contact.name} className="flex items-center gap-3 rounded-2xl border border-slate-100 p-3"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-black text-emerald-800">{contact.name.split(/\s+/).map((part) => part[0]).slice(0, 2).join("")}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{contact.name}</p><p className="text-[11px] text-slate-500">{contact.greetings >= 5 ? "Known neighbour" : contact.greetings >= 2 ? "Familiar face" : "New face"} · {contact.greetings} {contact.greetings === 1 ? "greeting" : "greetings"}</p></div><span className="text-[10px] text-slate-400">{new Date(contact.lastSeenAt).toLocaleDateString()}</span></div>)}</div> : <p className="mt-2 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-500">Your contacts will appear here as you greet residents around Abuja.</p>}
+          </div>
           {activityToast && <p role="status" className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">{activityToast}</p>}
-          <p className="mt-4 text-xs leading-5 text-slate-500">Phone features are added only when connected to game state. Calls are in-game only.</p>
+          <p className="mt-4 text-xs leading-5 text-slate-500">Calls and contacts are in-game only. Your contacts are saved from your interaction history.</p>
         </section>
       </div>}
     </main>
