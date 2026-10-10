@@ -55,6 +55,7 @@ export default function PropertyPanel({ onUpdate }: { onUpdate: (data: any) => v
       const data = await response.json();
       if (!response.ok) {
         setNotice(data.error ?? "Could not complete the move.");
+        if (response.status === 409) await load();
       } else {
         setNotice(data.message);
         onUpdate(data);
@@ -100,7 +101,7 @@ export default function PropertyPanel({ onUpdate }: { onUpdate: (data: any) => v
                   </div>
                   <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
                     <div>
-                      <p className="text-sm font-black">Due ₦{dueAfterCredit.toLocaleString()}</p>
+                      <p className="text-sm font-black">{property.isCurrentHome ? "Your current home" : `Due ₦${dueAfterCredit.toLocaleString()}`}</p>
                       {rentCredit > 0 && <p className="mt-1 text-[10px] text-slate-500">Before credit ₦{property.total.toLocaleString()}</p>}
                     </div>
                     <button
