@@ -82,6 +82,7 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => null);
   const activity = typeof body?.activity === "string" ? body.activity : "";
+  const targetName = typeof body?.targetName === "string" ? body.targetName.trim().slice(0, 60) : "";
   if (!Object.prototype.hasOwnProperty.call(ACTIVITIES, activity)) {
     return NextResponse.json({ error: "That activity is not available." }, { status: 400 });
   }
@@ -184,7 +185,15 @@ export async function POST(request: Request) {
         });
       }
 
-      const statChanges = { ...config.changes, cost: config.cost, reward: config.reward };
+      const statChanges = {
+        ...config.changes,
+        cost: config.cost,
+        reward: config.reward,
+        ...(key === "greet_neighbour" && targetName ? { targetName } : {}),
+      };
+      const message = key === "greet_neighbour" && targetName
+        ? `You greeted ${targetName}. A friendly conversation helped build your connections.`
+        : config.message;
       await tx.gameActivity.create({
         data: {
           playerId,
@@ -198,12 +207,12 @@ export async function POST(request: Request) {
           playerId,
           type: "activity_reward",
           title: config.reward > 0 ? `+₦${config.reward} Game Naira` : config.label,
-          body: config.message,
+          body: message,
           data: statChanges,
         },
       });
 
-      return { ...updated, message: config.message, activity: key, activityLabel: config.label, reward: config.reward, cost: config.cost };
+      return { ...updated, message, activity: key, activityLabel: config.label, reward: config.reward, cost: config.cost };
     });
 
     return NextResponse.json({
