@@ -34,6 +34,21 @@ export async function POST() {
       const job = JOBS.find((item) => item.title === player.currentJob);
       if (!job) throw new Error("JOB_NOT_FOUND");
 
+      const requiredAreaByJob: Record<string, string> = {
+        "Flyer Distributor": "Wuse 2",
+        "Suya Spot Attendant": "Wuse 2",
+        "Shop Assistant": "Wuse 2",
+        "Restaurant Staff": "Jabi",
+        "Hotel Staff": "Central Area",
+        "Bank Teller": "Garki",
+        "Junior Civil Servant": "Garki",
+        "Hype Man": "Wuse 2",
+      };
+      const requiredArea = requiredAreaByJob[job.title];
+      if (requiredArea && player.currentArea !== requiredArea) {
+        throw new Error("WORKPLACE_" + requiredArea.toUpperCase().replace(/\\s+/g, "_"));
+      }
+
       const pay = BigInt(job.payPerShift ?? 0);
       if (pay <= 0n) throw new Error("COMMISSION_JOB");
 
@@ -127,6 +142,10 @@ export async function POST() {
     if (code === "NO_JOB") return NextResponse.json({ error: "Choose a job first." }, { status: 400 });
     if (code === "JOB_NOT_FOUND") return NextResponse.json({ error: "Your current job is no longer available." }, { status: 400 });
     if (code === "COMMISSION_JOB") return NextResponse.json({ error: "This is a commission-based role. Its payout system comes in the next jobs expansion." }, { status: 400 });
+    if (code.startsWith("WORKPLACE_")) {
+      const area = code.slice("WORKPLACE_".length).replace(/_/g, " ");
+      return NextResponse.json({ error: "Travel to " + area + " before starting this shift.", requiredArea: area }, { status: 400 });
+    }
     return NextResponse.json({ error: "Could not complete the shift." }, { status: 500 });
   }
 }
