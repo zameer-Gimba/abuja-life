@@ -565,6 +565,7 @@ export default function GameShell({ player }: { player: Player }) {
   }
 
   return (
+    <>
     <div className="fixed left-1/2 top-3 z-[80] flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-white/20 bg-slate-950/90 px-4 py-2 text-white shadow-xl backdrop-blur-md" aria-label="In-game time">
       <span className="text-xs font-bold uppercase tracking-wider text-amber-300">Day {gameDay}</span>
       <span className="text-lg font-black tabular-nums">{gameTimeLabel}</span>
@@ -685,5 +686,6 @@ export default function GameShell({ player }: { player: Player }) {
         </section>
       </div>}
     </main>
+    </>
   );
 }
