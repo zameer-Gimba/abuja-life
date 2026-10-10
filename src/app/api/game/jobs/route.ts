@@ -37,6 +37,7 @@ export async function GET() {
         title: job.title,
         category: job.category,
         location: job.location,
+        venue: job.venue ?? job.location,
         payPerShift: job.payPerShift,
         shiftHours: job.shiftHours,
         opensAt: "opensAt" in job && typeof job.opensAt === "number" ? job.opensAt : undefined,
