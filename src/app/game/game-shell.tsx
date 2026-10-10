@@ -115,7 +115,7 @@ export default function GameShell({ player }: { player: Player }) {
   const [balance, setBalance] = useState(BigInt(player.walletBalance));
   const [bankBalance, setBankBalance] = useState(BigInt(player.bankBalance));
   const [netWorth, setNetWorth] = useState(BigInt(player.totalNetWorth));
-  const [jobs, setJobs] = useState<Array<{ title: string; category: string; location: string; payPerShift: number; shiftHours: number; opensAt?: number; closesAt?: number; minHustle?: number; minIntelligence?: number; minConnect?: number; requiresVehicle?: boolean; careerRecord?: { shiftsWorked: number; totalEarned: string; performance: number } | null }>>([]);
+  const [jobs, setJobs] = useState<Array<{ title: string; category: string; location: string; venue?: string; payPerShift: number; shiftHours: number; opensAt?: number; closesAt?: number; minHustle?: number; minIntelligence?: number; minConnect?: number; requiresVehicle?: boolean; careerRecord?: { shiftsWorked: number; totalEarned: string; performance: number } | null }>>([]);
   const [jobLoading, setJobLoading] = useState(false);
   const [jobNotice, setJobNotice] = useState("");
   const [activeJob, setActiveJob] = useState(player.currentJob);
@@ -714,7 +714,7 @@ export default function GameShell({ player }: { player: Player }) {
                       <div>
                         <p className="font-black">{job.title}</p>
                         <p className="mt-1 text-xs font-semibold text-slate-500">
-                          {job.location} · {job.shiftHours}h shift{job.opensAt !== undefined
+                          {job.location}{job.venue && job.venue !== job.location ? " · " + job.venue : ""} · {job.shiftHours}h shift{job.opensAt !== undefined
                             ? " · " + (job.opensAt >= 19 || (job.closesAt !== undefined && job.closesAt < job.opensAt) ? "Night hours" : "Hours") + " " + formatHour(job.opensAt) + "–" + formatHour(closingHour ?? job.opensAt)
                             : " · Flexible hours"}
                         </p>
