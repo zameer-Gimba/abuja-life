@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getLagosDayStart } from "@/lib/lagos-day";
 import { calculateTravelCost, TRAVEL_AREAS, TRAVEL_AREA_DISTANCE, TRAVEL_MODES, type TravelMode } from "@/constants/game";
+import { advanceGameClock } from "@/lib/game-clock";
 
 const DURATIONS: Record<TravelMode, number> = {
   TREK: 25,
@@ -40,6 +41,7 @@ export async function POST(request: Request) {
 
   try {
     const result = await db.$transaction(async (tx) => {
+      await tx.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "players" WHERE "id" = ${playerId} FOR UPDATE`;
       const player = await tx.player.findUnique({
         where: { id: playerId },
         select: {
@@ -49,6 +51,7 @@ export async function POST(request: Request) {
           bankBalance: true,
           savingsBalance: true,
           bondsBalance: true,
+          totalNetWorth: true,
           hasVehicle: true,
           vehicleFuel: true,
           vehicleCondition: true,
@@ -89,7 +92,7 @@ export async function POST(request: Request) {
       if (fuelUsed > player.vehicleFuel) throw new Error("INSUFFICIENT_FUEL");
 
       const balanceAfter = player.walletBalance - costBigInt + BigInt(reward);
-      const netWorthAfter = balanceAfter + player.bankBalance + player.savingsBalance + player.bondsBalance;
+      const netWorthAfter = player.totalNetWorth - costBigInt + BigInt(reward);
       const fitnessAfter = mode === "TREK" ? clampStat(player.fitness + 2) : player.fitness;
       const happinessAfter = mode === "TREK" ? clampStat(player.happiness + 1) : player.happiness;
       const drivingSkillAfter = mode === "PERSONAL_CAR" ? Math.min(100, player.drivingSkill + 1) : player.drivingSkill;
@@ -170,6 +173,7 @@ export async function POST(request: Request) {
           statChanges,
         },
       });
+      await advanceGameClock(tx, player.id, DURATIONS[mode as TravelMode], "travel");
 
       return {
         currentArea: destination,
