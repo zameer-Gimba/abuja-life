@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 const ACTIONS = ["deposit", "withdraw", "save", "unsave", "pay_debt"] as const;
 type Action = (typeof ACTIONS)[number];
 
-function toSerializableBalances<T extends Record<string, unknown>>(balances: T) {
+function toSerializableBalances<T extends object>(balances: T) {
   return Object.fromEntries(
     Object.entries(balances).map(([key, value]) => [
       key,
