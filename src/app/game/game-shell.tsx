@@ -7,6 +7,7 @@ import PropertyPanel from "./property-panel";
 import VehiclePanel from "./vehicle-panel";
 import WorldHome from "./world-home";
 import { useGameClock } from "./use-game-clock";
+import GameClockLabel from "./game-clock-label";
 import { Activity, ArrowRight, Banknote, Building2, Car, Compass, Fuel, Home, Map, Menu, PhoneCall, Shield, Smartphone, Sparkles, Users, Wallet, X, Zap } from "lucide-react";
 
 type Player = {
@@ -100,7 +101,7 @@ const stats = [
 ] as const;
 
 export default function GameShell({ player }: { player: Player }) {
-  const gameClock = useGameClock();
+  const gameClock = useGameClock(15_000);
   const [currentArea, setCurrentArea] = useState(player.currentArea);
   const [homeArea, setHomeArea] = useState(player.homeArea);
   const [housingType, setHousingType] = useState(player.housingType);
@@ -174,6 +175,11 @@ export default function GameShell({ player }: { player: Player }) {
   const displayedNetWorth = useMemo(() => Number(netWorth).toLocaleString(), [netWorth]);
   const currentJob = player.currentJob;
 
+  async function refreshGameClock() {
+    await refreshGameClock();
+    window.dispatchEvent(new Event("game-clock-updated"));
+  }
+
   function openView(nextView: string) {
     setView(nextView);
     if (nextView === "jobs") void loadJobs();
@@ -224,7 +230,7 @@ export default function GameShell({ player }: { player: Player }) {
         setShiftsCompleted(data.shiftsCompleted);
         setPerformanceScore(data.performanceScore);
         setJobNotice(`${data.message} Career performance +${data.performanceGain}.`);
-        void gameClock.refresh();
+        void refreshGameClock();
       } else {
         setJobNotice(data.error ?? "Could not complete shift.");
         if (data.requiredArea) setJobNotice(data.error + " Use the Map to travel there, then return to Jobs.");
@@ -275,7 +281,7 @@ export default function GameShell({ player }: { player: Player }) {
       // Keep the route transition short and visible instead of switching scenes instantly.
       await new Promise<void>((resolve) => window.setTimeout(resolve, 1350));
       setCurrentArea(data.currentArea);
-      void gameClock.refresh();
+      void refreshGameClock();
       setBalance(BigInt(data.walletBalance));
       setNetWorth(BigInt(data.totalNetWorth));
       if (typeof data.fitness === "number") setFitness(data.fitness);
@@ -346,7 +352,7 @@ export default function GameShell({ player }: { player: Player }) {
       setHappiness(data.happiness);
       setAura(data.aura);
       setConnection(data.connectLevel);
-      void gameClock.refresh();
+      void refreshGameClock();
       const rewardText = data.reward > 0 ? ` +₦${Number(data.reward).toLocaleString()} Game Naira.` : "";
       const costText = data.cost > 0 ? ` −₦${Number(data.cost).toLocaleString()}.` : "";
       const message = `${data.message}${rewardText}${costText}`;
@@ -379,7 +385,7 @@ export default function GameShell({ player }: { player: Player }) {
           <div className="pointer-events-auto max-w-[55vw] rounded-2xl border border-white/15 bg-slate-950/80 px-3 py-2.5 text-white shadow-2xl backdrop-blur-xl sm:max-w-sm sm:px-4">
             <p className="text-[9px] font-black uppercase tracking-[0.22em] text-emerald-300">ABUJA LIFE <span className="text-white/40">/ LIVE WORLD</span></p>
             <p className="mt-0.5 truncate text-sm font-black sm:text-base">{currentPoi ?? currentArea}</p>
-            <p className="mt-0.5 text-[10px] text-slate-300">{worldScene === "home" ? "Home" : worldScene === "mosque" ? "Mosque courtyard" : "Abuja, FCT"} · Day {gameClock.dayNumber} · {gameClock.time} · {gameClock.period} · {travelling ? "On the move…" : "Free roam"}</p>
+            <p className="mt-0.5 text-[10px] text-slate-300">{worldScene === "home" ? "Home" : worldScene === "mosque" ? "Mosque courtyard" : "Abuja, FCT"} · <GameClockLabel /> · {travelling ? "On the move…" : "Free roam"}</p>
           </div>
           <div className="pointer-events-auto flex max-w-[72vw] items-center gap-2 rounded-2xl border border-white/15 bg-slate-950/80 px-2.5 py-2 text-white shadow-2xl backdrop-blur-xl sm:gap-4 sm:px-4">
             <div><p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Mood</p><p className="text-xs font-black text-emerald-300 sm:text-sm">{happiness >= 80 ? "Very Happy" : happiness >= 55 ? "Good" : "Low"}</p></div>
