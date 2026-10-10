@@ -182,6 +182,10 @@ function RoomFurniture({ sceneId }: { sceneId: string }) {
 
 export function Character({ look, onPosition, moveTarget, streetMode = false, showCrown = false }: { look: CharacterLook; onPosition: (x: number, z: number) => void; moveTarget?: { x: number; z: number } | null; streetMode?: boolean; showCrown?: boolean }) {
   const root = useRef<THREE.Group>(null);
+  const leftLeg = useRef<THREE.Mesh>(null);
+  const rightLeg = useRef<THREE.Mesh>(null);
+  const leftArm = useRef<THREE.Mesh>(null);
+  const rightArm = useRef<THREE.Mesh>(null);
   const keys = useRef<Record<string, boolean>>({});
   const lastPositionReport = useRef(0);
   const skin = skinPalette[look.skinTone] ?? skinPalette.medium_brown;
@@ -247,6 +251,11 @@ export function Character({ look, onPosition, moveTarget, streetMode = false, sh
     root.current.position.z = THREE.MathUtils.clamp(root.current.position.z, streetMode ? -5.6 : -3.3, streetMode ? 5.6 : 3.25);
 
     if (moved && (forward || side)) root.current.rotation.y = Math.atan2(side, forward || 0.0001);
+    const gait = moved ? Math.sin(state.clock.elapsedTime * 10) * 0.48 : 0;
+    if (leftLeg.current) leftLeg.current.rotation.x = gait;
+    if (rightLeg.current) rightLeg.current.rotation.x = -gait;
+    if (leftArm.current) leftArm.current.rotation.x = -gait * 0.65;
+    if (rightArm.current) rightArm.current.rotation.x = gait * 0.65;
     if (moved && state.clock.elapsedTime - lastPositionReport.current >= 0.12) {
       lastPositionReport.current = state.clock.elapsedTime;
       onPosition(Number(root.current.position.x.toFixed(2)), Number(root.current.position.z.toFixed(2)));
@@ -256,20 +265,18 @@ export function Character({ look, onPosition, moveTarget, streetMode = false, sh
   return (
     <group ref={root} position={[0, 0, 0]} scale={scale}>
       {/* Stable low-poly character assembled from reusable meshes. */}
-      <mesh position={[0, 0.12, 0]} castShadow>
-        <boxGeometry args={[0.38, 0.18, 0.25]} />
-        <meshStandardMaterial color={shoes} roughness={0.8} />
-      </mesh>
-      <mesh position={[0, 0.46, 0]} castShadow>
-        <capsuleGeometry args={[0.105, 0.48, 4, 8]} />
-        <meshStandardMaterial color={bottom} roughness={0.88} />
-      </mesh>
+      <mesh position={[0, 0.095, 0.035]} castShadow><boxGeometry args={[0.17, 0.13, 0.31]} /><meshStandardMaterial color={shoes} roughness={0.8} /></mesh>
+      <mesh position={[0, 0.55, 0]} castShadow><capsuleGeometry args={[0.17, 0.28, 4, 8]} /><meshStandardMaterial color={bottom} roughness={0.88} /></mesh>
+      <mesh ref={leftLeg} position={[-0.095, 0.29, 0]} castShadow><capsuleGeometry args={[0.075, 0.34, 4, 8]} /><meshStandardMaterial color={bottom} roughness={0.88} /></mesh>
+      <mesh ref={rightLeg} position={[0.095, 0.29, 0]} castShadow><capsuleGeometry args={[0.075, 0.34, 4, 8]} /><meshStandardMaterial color={bottom} roughness={0.88} /></mesh>
+      <mesh position={[-0.095, 0.085, 0.055]} castShadow><boxGeometry args={[0.14, 0.11, 0.29]} /><meshStandardMaterial color={shoes} roughness={0.8} /></mesh>
+      <mesh position={[0.095, 0.085, 0.055]} castShadow><boxGeometry args={[0.14, 0.11, 0.29]} /><meshStandardMaterial color={shoes} roughness={0.8} /></mesh>
       <mesh position={[0, 1.05, 0]} castShadow>
         <capsuleGeometry args={[isFemale ? 0.19 : 0.2, 0.42, 4, 10]} />
         <meshStandardMaterial color={top} roughness={0.8} />
       </mesh>
       {[-1, 1].map((s) => (
-        <mesh key={s} position={[s * 0.25, 1.02, 0]} rotation={[0, 0, s * -0.08]} castShadow>
+        <mesh key={s} ref={s < 0 ? leftArm : rightArm} position={[s * 0.25, 1.02, 0]} rotation={[0, 0, s * -0.08]} castShadow>
           <capsuleGeometry args={[0.065, 0.42, 4, 8]} />
           <meshStandardMaterial color={skin} roughness={0.9} />
         </mesh>
@@ -299,10 +306,9 @@ export function Character({ look, onPosition, moveTarget, streetMode = false, sh
           <meshStandardMaterial color={hair} roughness={1} />
         </mesh>
       )}
-      <mesh position={[0, 1.68, 0.15]}>
-        <boxGeometry args={[0.075, 0.025, 0.025]} />
-        <meshStandardMaterial color="#211914" />
-      </mesh>
+      <mesh position={[-0.058, 1.705, 0.145]}><sphereGeometry args={[0.018, 8, 6]} /><meshStandardMaterial color="#211914" /></mesh>
+      <mesh position={[0.058, 1.705, 0.145]}><sphereGeometry args={[0.018, 8, 6]} /><meshStandardMaterial color="#211914" /></mesh>
+      <mesh position={[0, 1.635, 0.154]}><boxGeometry args={[0.055, 0.012, 0.018]} /><meshStandardMaterial color="#5a2f25" /></mesh>
       {showCrown && <group position={[0, 2.02, 0]}>
         <mesh position={[0, 0, 0]}><boxGeometry args={[0.25, 0.035, 0.12]} /><meshStandardMaterial color="#f4c542" metalness={0.35} roughness={0.4} /></mesh>
         {[-0.09, 0, 0.09].map((x) => <mesh key={x} position={[x, 0.055, 0]}><coneGeometry args={[0.045, 0.11, 4]} /><meshStandardMaterial color="#f4c542" metalness={0.35} roughness={0.4} /></mesh>)}
@@ -389,6 +395,27 @@ function MovingCar({ startX, z, speed, color, roofColor }: { startX: number; z: 
         </mesh>
       )))}
       <mesh position={[0.73, 0.39, 0]}><boxGeometry args={[0.035, 0.12, 0.24]} /><meshStandardMaterial color="#f8e7ae" emissive="#e7be58" emissiveIntensity={0.35} /></mesh>
+    </group>
+  );
+}
+
+function KekeNapep({ startX, z, speed }: { startX: number; z: number; speed: number }) {
+  const root = useRef<THREE.Group>(null);
+  useFrame((_, delta) => {
+    if (!root.current) return;
+    root.current.position.x += speed * delta;
+    if (root.current.position.x > 18) root.current.position.x = -18;
+    if (root.current.position.x < -18) root.current.position.x = 18;
+  });
+  return (
+    <group ref={root} position={[startX, 0, z]} rotation={[0, speed < 0 ? Math.PI : 0, 0]}>
+      <mesh position={[0, 0.34, 0]} castShadow><boxGeometry args={[0.9, 0.43, 0.72]} /><meshStandardMaterial color="#e4bd2e" roughness={0.7} /></mesh>
+      <mesh position={[-0.08, 0.66, 0]} castShadow><boxGeometry args={[0.67, 0.3, 0.65]} /><meshStandardMaterial color="#277452" roughness={0.62} /></mesh>
+      <mesh position={[0.24, 0.65, 0]}><boxGeometry args={[0.035, 0.23, 0.52]} /><meshStandardMaterial color="#b9d9dc" metalness={0.12} roughness={0.25} /></mesh>
+      <mesh position={[0.46, 0.34, 0]}><boxGeometry args={[0.03, 0.12, 0.22]} /><meshStandardMaterial color="#f6e7b1" emissive="#e7be58" emissiveIntensity={0.2} /></mesh>
+      {[-0.27, 0.25].map((x) => <mesh key={x} position={[x, 0.15, 0.39]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.105, 0.105, 0.07, 10]} /><meshStandardMaterial color="#202328" /></mesh>)}
+      <mesh position={[0.05, 0.15, -0.39]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.1, 0.1, 0.07, 10]} /><meshStandardMaterial color="#202328" /></mesh>
+      <mesh position={[-0.2, 0.9, 0]}><boxGeometry args={[0.55, 0.06, 0.64]} /><meshStandardMaterial color="#245f49" roughness={0.8} /></mesh>
     </group>
   );
 }
@@ -548,6 +575,7 @@ function StreetScene({ look, area, onPosition, moveTarget }: { look: CharacterLo
         <mesh position={[0.54, 2.45, 0]}><boxGeometry args={[0.25, 0.12, 0.18]} /><meshStandardMaterial color="#f2df9f" emissive="#f2df9f" emissiveIntensity={0.3} /></mesh>
       </group>
       {vehicles.map((vehicle) => <MovingCar key={vehicle.startX + ":" + vehicle.z} {...vehicle} />)}
+      {!isQuiet && <><KekeNapep startX={-2} z={-1.32} speed={1.25} /><KekeNapep startX={12} z={1.42} speed={-1.05} /></>}
       {people.map((person, index) => <AmbientPedestrian key={index} {...person} />)}
       <Character look={look} onPosition={onPosition} moveTarget={moveTarget} streetMode showCrown />
       <Text position={[0, 3.8, -5.4]} rotation={[0, 0, 0]} fontSize={0.38} color="#153c37" anchorX="center">{streetLabel}</Text>
