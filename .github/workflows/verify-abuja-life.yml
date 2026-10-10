@@ -11,6 +11,10 @@ on:
       - develop
       - main
 
+concurrency:
+  group: verify-abuja-life-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
