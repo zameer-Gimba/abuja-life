@@ -674,7 +674,7 @@ export default function GameShell({ player }: { player: Player }) {
                   <p className="mt-2 text-xs text-slate-500">Requirements: Hustle {job.minHustle ?? 0} · Intelligence {job.minIntelligence ?? 0} · Connection {job.minConnect ?? 0}{job.requiresVehicle ? " · Vehicle" : ""}</p>
                   {job.careerRecord && <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">Your record: {job.careerRecord.shiftsWorked} shift{job.careerRecord.shiftsWorked === 1 ? "" : "s"} · ₦{Number(job.careerRecord.totalEarned).toLocaleString()} earned · +{job.careerRecord.performance} performance</p>}
                   <p className={"mt-3 rounded-lg px-3 py-2 text-xs font-bold " + statusStyle} aria-live="polite">{shiftStatus}</p>
-                  <button onClick={() => applyForJob(job.title)} disabled={jobLoading || activeJob === job.title || job.payPerShift <= 0} className="mt-4 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">{jobLoading ? "Processing..." : job.payPerShift <= 0 ? "Coming soon" : activeJob === job.title ? "Current job" : "Apply"}</button>
+                  <button onClick={() => applyForJob(job.title)} disabled={jobLoading || activeJob === job.title || job.payPerShift <= 0 || !hasRequirements} className="mt-4 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">{jobLoading ? "Processing..." : job.payPerShift <= 0 ? "Coming soon" : activeJob === job.title ? "Current job" : !hasRequirements ? "Requirements not met" : "Apply"}</button>
                   </div>;
                 })}
               </div>
