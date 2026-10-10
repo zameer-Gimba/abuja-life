@@ -17,7 +17,7 @@ type ClockAnchor = {
   receivedAtMs: number;
 };
 
-export function useGameClock(tickIntervalMs = 1_000, listenForExternalUpdates = false) {
+export function useGameClock(tickIntervalMs = 1_000) {
   const [anchor, setAnchor] = useState<ClockAnchor>({
     minuteOfDay: DEFAULT_GAME_MINUTE_OF_DAY,
     dayNumber: 1,
@@ -60,18 +60,8 @@ export function useGameClock(tickIntervalMs = 1_000, listenForExternalUpdates = 
   useEffect(() => {
     void refresh();
     const interval = window.setInterval(() => setNowMs(performance.now()), tickIntervalMs);
-    const handleExternalUpdate = () => { void refresh(); };
-    if (listenForExternalUpdates) {
-      window.addEventListener("game-clock-updated", handleExternalUpdate);
-    }
-
-    return () => {
-      window.clearInterval(interval);
-      if (listenForExternalUpdates) {
-        window.removeEventListener("game-clock-updated", handleExternalUpdate);
-      }
-    };
-  }, [refresh, tickIntervalMs, listenForExternalUpdates]);
+    return () => window.clearInterval(interval);
+  }, [refresh, tickIntervalMs]);
 
   const current = useMemo(() => {
     const elapsed = Math.floor(
