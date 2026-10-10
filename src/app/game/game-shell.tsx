@@ -366,6 +366,7 @@ export default function GameShell({ player }: { player: Player }) {
         return;
       }
       setHealth(data.health);
+      setFitness(data.fitness);
       setHappiness(data.happiness);
       setActivityToast(data.message);
       setNotice(data.message);
