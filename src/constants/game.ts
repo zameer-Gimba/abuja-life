@@ -114,6 +114,17 @@ export const BERGER = {
 }
 
 // ── Jobs ───────────────────────────────────────────────────
+export const JOB_WORK_AREAS: Record<string, string> = {
+  "Flyer Distributor": "Wuse 2",
+  "Suya Spot Attendant": "Wuse 2",
+  "Shop Assistant": "Wuse 2",
+  "Restaurant Staff": "Jabi",
+  "Hotel Staff": "Central Area",
+  "Bank Teller": "Garki",
+  "Junior Civil Servant": "Garki",
+  "Hype Man": "Wuse 2",
+};
+
 export const JOBS = [
   { title: "Security Guard", category: "hustle", location: "Citywide", venue: "Various", payPerShift: 3500, shiftHours: 8, minHustle: 0 },
   { title: "Keke Driver", category: "hustle", location: "Suburbs", venue: "Berger Motor Park", payPerShift: 5000, shiftHours: 8, requiresVehicle: true },
