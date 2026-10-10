@@ -509,10 +509,12 @@ function StreetTree({ x, z, variant = 0 }: { x: number; z: number; variant?: num
   );
 }
 
-function StreetScene({ look, area, onPosition, moveTarget, onNpcSelect, isNight, nightFactor }: { look: CharacterLook; area: string; onPosition: (x: number, z: number) => void; moveTarget: { x: number; z: number } | null; onNpcSelect?: (npc: NpcProfile) => void; isNight: boolean; nightFactor: number }) {
+function StreetScene({ look, area, onPosition, moveTarget, onNpcSelect, isNight, nightFactor, timeOfDayMinutes }: { look: CharacterLook; area: string; onPosition: (x: number, z: number) => void; moveTarget: { x: number; z: number } | null; onNpcSelect?: (npc: NpcProfile) => void; isNight: boolean; nightFactor: number; timeOfDayMinutes: number }) {
   const isQuiet = ["Maitama", "Asokoro", "Guzape"].includes(area);
   const isCentral = area === "Central Area";
   const isWuse = area === "Wuse 2";
+  const hour = Math.floor(timeOfDayMinutes / 60);
+  const isRushHour = (hour >= 7 && hour < 9) || (hour >= 16 && hour < 19);
   const buildings = isCentral ? [
     { x: -13, z: -10, height: 11.8, width: 4.8, color: "#b9c3c8", label: "CIVIC OFFICE" },
     { x: -7, z: -10, height: 14, width: 4.6, color: "#b7c5cb", label: "BUSINESS TOWER" },
@@ -572,6 +574,13 @@ function StreetScene({ look, area, onPosition, moveTarget, onNpcSelect, isNight,
   ] : [
     { startX: -10, z: -1.35, speed: 1.2, color: "#ba3f37", roofColor: "#3b464f" },
     { startX: 9, z: 1.45, speed: -1.1, color: "#477c65", roofColor: "#384b51" },
+  ] : isRushHour ? [
+    { startX: -10, z: -1.35, speed: 2.1, color: "#ba3f37", roofColor: "#3b464f" },
+    { startX: 3, z: -1.35, speed: isCentral ? 2.45 : 1.8, color: "#e2bd45", roofColor: "#475b63" },
+    { startX: 9, z: 1.45, speed: -1.7, color: "#477c65", roofColor: "#384b51" },
+    { startX: -4, z: 1.45, speed: -2.2, color: "#ece6d8", roofColor: "#536778" },
+    { startX: 14, z: -1.35, speed: 1.55, color: "#d8d6ce", roofColor: "#455563" },
+    { startX: -14, z: 1.45, speed: -1.35, color: "#a8b5bd", roofColor: "#293c48" },
   ] : [
     { startX: -10, z: -1.35, speed: 2.2, color: "#ba3f37", roofColor: "#3b464f" },
     { startX: 3, z: -1.35, speed: isCentral ? 2.6 : 1.5, color: "#e2bd45", roofColor: "#475b63" },
@@ -751,7 +760,7 @@ export default function WorldHome({ look, sceneId, immersive = false, worldScene
         <Canvas shadows dpr={[1, 1.5]} camera={worldScene === "home" ? { position: [7, 7.8, 8], fov: 36 } : worldScene === "mosque" ? { position: [9, 9, 11], fov: 43 } : { position: [12, 10, 13], fov: 42 }}>
           <Suspense fallback={null}>
             {worldScene === "street"
-              ? <StreetScene look={look} area={area} moveTarget={moveTarget} isNight={isNight} nightFactor={nightFactor} onPosition={(x, z) => setPosition({ x, z })} onNpcSelect={(npc) => { setMoveTarget({ x: npc.x - 1, z: npc.z }); onNpcSelect?.(npc); }} />
+              ? <StreetScene look={look} area={area} moveTarget={moveTarget} isNight={isNight} nightFactor={nightFactor} timeOfDayMinutes={timeOfDayMinutes} onPosition={(x, z) => setPosition({ x, z })} onNpcSelect={(npc) => { setMoveTarget({ x: npc.x - 1, z: npc.z }); onNpcSelect?.(npc); }} />
               : worldScene === "mosque"
                 ? <MosqueScene look={look} moveTarget={moveTarget} isNight={isNight} nightFactor={nightFactor} onPosition={(x, z) => setPosition({ x, z })} onNpcSelect={(npc) => { setMoveTarget({ x: npc.x - 1, z: npc.z }); onNpcSelect?.(npc); }} />
                 : <RoomScene look={look} sceneId={sceneId} moveTarget={moveTarget} isNight={isNight} nightFactor={nightFactor} onPosition={(x, z) => setPosition({ x, z })} />}
