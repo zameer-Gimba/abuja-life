@@ -328,7 +328,7 @@ function RoomScene({ look, onPosition, moveTarget, isNight }: { look: CharacterL
       <RoomFurniture sceneId={look.background === "rich" ? "guzape_mansion_v1" : "nyanya_shared_room_v1"} />
       <Character look={look} onPosition={onPosition} moveTarget={moveTarget} showCrown />
       <Text position={[-3.65, 2.75, 3.72]} rotation={[0, 0, 0]} fontSize={0.14} color="#f4e5b5" anchorX="center">EXIT</Text>
-      <Environment preset="apartment" />
+      <Environment preset="apartment" environmentIntensity={isNight ? 0.28 : 1} />
     </>
   );
 }
@@ -599,7 +599,7 @@ function StreetScene({ look, area, onPosition, moveTarget, onNpcSelect, isNight 
       {people.map((person, index) => <AmbientPedestrian key={index} {...person} name={["Amina Yusuf", "Tunde Okafor", "Zainab Bello", "Emeka Nwosu", "Hauwa Musa", "Chinedu Eze", "Maryam Sani", "Sadiq Abdullahi"][index % 8]} role={["Shop owner", "University student", "Neighbour", "Ride-hailing driver", "Office worker", "Local trader", "Creative freelancer", "Community volunteer"][index % 8]} onSelect={onNpcSelect} />)}
       <Character look={look} onPosition={onPosition} moveTarget={moveTarget} streetMode showCrown />
       <Text position={[0, 3.8, -5.4]} rotation={[0, 0, 0]} fontSize={0.38} color="#153c37" anchorX="center">{streetLabel}</Text>
-      <Environment preset="city" />
+      <Environment preset="city" environmentIntensity={isNight ? 0.18 : 1} />
     </>
   );
 }
@@ -655,7 +655,7 @@ function MosqueScene({ look, onPosition, moveTarget, onNpcSelect, isNight }: { l
       <Character look={look} onPosition={onPosition} moveTarget={moveTarget} streetMode showCrown />
       <Text position={[0, 5.65, -4.5]} fontSize={0.34} color="#17574b" anchorX="center">ABUJA NATIONAL MOSQUE</Text>
       <Text position={[0, 0.4, 6.6]} fontSize={0.24} color="#536b61" anchorX="center">COURTYARD · CENTRAL AREA</Text>
-      <Environment preset="city" />
+      <Environment preset="city" environmentIntensity={isNight ? 0.18 : 1} />
     </>
   );
 }
