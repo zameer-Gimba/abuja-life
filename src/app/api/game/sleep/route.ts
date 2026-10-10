@@ -26,6 +26,7 @@ export async function POST() {
           currentArea: true,
           homeArea: true,
           health: true,
+          fitness: true,
           happiness: true,
         },
       });
@@ -40,11 +41,12 @@ export async function POST() {
         : 1440 - clock.minuteOfDay + WAKE_MINUTE;
 
       const health = clampStat(player.health + 12);
+      const fitness = clampStat(player.fitness + 8);
       const happiness = clampStat(player.happiness + 5);
 
       await tx.player.update({
         where: { id: playerId },
-        data: { health, happiness, lastSeen: new Date() },
+        data: { health, fitness, happiness, lastSeen: new Date() },
       });
 
       await tx.gameActivity.create({
@@ -54,6 +56,7 @@ export async function POST() {
           reward: 0,
           statChanges: {
             health: health - player.health,
+            fitness: fitness - player.fitness,
             happiness: happiness - player.happiness,
             minutesSlept: minutesUntilMorning,
           },
@@ -64,8 +67,10 @@ export async function POST() {
 
       return {
         health,
+        fitness,
         happiness,
         healthRecovered: health - player.health,
+        fitnessRecovered: fitness - player.fitness,
         happinessRecovered: happiness - player.happiness,
         minutesSlept: minutesUntilMorning,
         minuteOfDay: nextClock.minuteOfDay,
@@ -75,7 +80,7 @@ export async function POST() {
 
     return NextResponse.json({
       ...result,
-      message: `You rested at home and woke up at 06:00. Health +${result.healthRecovered}; happiness +${result.happinessRecovered}.`,
+      message: `You rested at home and woke up at 06:00. Health +${result.healthRecovered}; fitness +${result.fitnessRecovered}; happiness +${result.happinessRecovered}.`,
     });
   } catch (error) {
     const code = error instanceof Error ? error.message : "UNKNOWN";
