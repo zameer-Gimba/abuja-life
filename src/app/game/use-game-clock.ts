@@ -14,15 +14,17 @@ type ClockAnchor = {
   minuteOfDay: number;
   dayNumber: number;
   serverNow: string;
+  receivedAtMs: number;
 };
 
-export function useGameClock() {
+export function useGameClock(tickIntervalMs = 1_000, listenForExternalUpdates = false) {
   const [anchor, setAnchor] = useState<ClockAnchor>({
     minuteOfDay: DEFAULT_GAME_MINUTE_OF_DAY,
     dayNumber: 1,
-    serverNow: new Date().toISOString(),
+    serverNow: "",
+    receivedAtMs: 0,
   });
-  const [nowMs, setNowMs] = useState(() => Date.now());
+  const [nowMs, setNowMs] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState("");
 
@@ -38,12 +40,16 @@ export function useGameClock() {
       ) {
         throw new Error("Clock response was incomplete");
       }
+
+      // Monotonic browser time avoids clock drift when the device's date/time is incorrect.
+      const receivedAtMs = performance.now();
       setAnchor({
         minuteOfDay: data.minuteOfDay,
         dayNumber: data.dayNumber,
         serverNow: data.serverNow,
+        receivedAtMs,
       });
-      setNowMs(Date.now());
+      setNowMs(receivedAtMs);
       setLoaded(true);
       setError("");
     } catch {
@@ -53,15 +59,24 @@ export function useGameClock() {
 
   useEffect(() => {
     void refresh();
-    const interval = window.setInterval(() => setNowMs(Date.now()), 1_000);
-    return () => window.clearInterval(interval);
-  }, [refresh]);
+    const interval = window.setInterval(() => setNowMs(performance.now()), tickIntervalMs);
+    const handleExternalUpdate = () => { void refresh(); };
+    if (listenForExternalUpdates) {
+      window.addEventListener("game-clock-updated", handleExternalUpdate);
+    }
+
+    return () => {
+      window.clearInterval(interval);
+      if (listenForExternalUpdates) {
+        window.removeEventListener("game-clock-updated", handleExternalUpdate);
+      }
+    };
+  }, [refresh, tickIntervalMs, listenForExternalUpdates]);
 
   const current = useMemo(() => {
-    const anchorMs = Date.parse(anchor.serverNow);
-    const elapsed = Number.isFinite(anchorMs)
-      ? Math.floor(Math.max(0, nowMs - anchorMs) / REAL_MS_PER_GAME_MINUTE)
-      : 0;
+    const elapsed = Math.floor(
+      Math.max(0, nowMs - anchor.receivedAtMs) / REAL_MS_PER_GAME_MINUTE,
+    );
     return advanceClock(anchor, elapsed);
   }, [anchor, nowMs]);
 
