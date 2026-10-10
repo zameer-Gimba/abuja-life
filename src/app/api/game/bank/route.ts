@@ -91,6 +91,7 @@ export async function POST(request: Request) {
           savingsBalance: true,
           bondsBalance: true,
           debt: true,
+          totalNetWorth: true,
         },
       });
       if (!player) throw new Error("PLAYER_NOT_FOUND");
@@ -143,7 +144,6 @@ export async function POST(request: Request) {
         transactionAmount = -payment;
       }
 
-      const totalNetWorth = wallet + bank + savings + player.bondsBalance;
       const updated = await tx.player.update({
         where: { id: playerId },
         data: {
@@ -151,7 +151,6 @@ export async function POST(request: Request) {
           bankBalance: bank,
           savingsBalance: savings,
           debt,
-          totalNetWorth,
           lastSeen: new Date(),
         },
         select: {
