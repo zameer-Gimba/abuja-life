@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { JOBS } from "@/constants/game";
+import { JOBS, JOB_WORK_AREAS } from "@/constants/game";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -13,6 +13,7 @@ export async function GET() {
       category: job.category,
       location: job.location,
       venue: job.venue ?? job.location,
+      requiredArea: JOB_WORK_AREAS[job.title] ?? null,
       opensAt: job.opensAt ?? null,
       commissionBased: job.commissionBased ?? false,
       payPerShift: job.payPerShift,
