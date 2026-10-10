@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { JOBS } from "@/constants/game";
+import { JOBS, JOB_WORK_AREAS } from "@/constants/game";
 
 export async function POST() {
   const session = await getServerSession(authOptions);
@@ -40,17 +40,7 @@ export async function POST() {
       if (player.connectLevel < (job.minConnect ?? 0)) throw new Error("CONNECTION_TOO_LOW");
       if (job.requiresVehicle && !player.hasVehicle) throw new Error("VEHICLE_REQUIRED");
 
-      const requiredAreaByJob: Record<string, string> = {
-        "Flyer Distributor": "Wuse 2",
-        "Suya Spot Attendant": "Wuse 2",
-        "Shop Assistant": "Wuse 2",
-        "Restaurant Staff": "Jabi",
-        "Hotel Staff": "Central Area",
-        "Bank Teller": "Garki",
-        "Junior Civil Servant": "Garki",
-        "Hype Man": "Wuse 2",
-      };
-      const requiredArea = requiredAreaByJob[job.title];
+      const requiredArea = JOB_WORK_AREAS[job.title];
       if (requiredArea && player.currentArea !== requiredArea) {
         throw new Error("WORKPLACE_" + requiredArea.toUpperCase().replace(/\s+/g, "_"));
       }
