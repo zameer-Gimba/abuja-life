@@ -333,7 +333,7 @@ function RoomScene({ look, onPosition, moveTarget }: { look: CharacterLook; onPo
 }
 
 
-type NpcProfile = { name: string; role: string };
+type NpcProfile = { name: string; role: string; x: number; z: number };
 type AmbientPedestrianProps = {
   x: number;
   z: number;
@@ -360,7 +360,7 @@ function AmbientPedestrian({ x, z, shirt, trousers, skin, hair, gender = "male",
   });
 
   return (
-    <group ref={root} position={[x, 0, z]} onClick={(event) => { event.stopPropagation(); onSelect?.({ name, role }); }} onPointerOver={() => { document.body.style.cursor = "pointer"; }} onPointerOut={() => { document.body.style.cursor = "auto"; }}>
+    <group ref={root} position={[x, 0, z]} onClick={(event) => { event.stopPropagation(); onSelect?.({ name, role, x, z }); }} onPointerOver={() => { document.body.style.cursor = "pointer"; }} onPointerOut={() => { document.body.style.cursor = "auto"; }}>
       <mesh position={[0, 0.035, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.2, 0.29, 20]} /><meshBasicMaterial color="#f4ce58" transparent opacity={0.72} /></mesh>
       <mesh position={[0, 0.63, 0]} castShadow><capsuleGeometry args={[0.14, 0.55, 4, 8]} /><meshStandardMaterial color={shirt} roughness={0.86} /></mesh>
       <mesh position={[0, 1.12, 0]} castShadow><sphereGeometry args={[0.135, 10, 8]} /><meshStandardMaterial color={skin} roughness={0.9} /></mesh>
