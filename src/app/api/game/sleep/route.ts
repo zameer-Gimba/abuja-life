@@ -73,7 +73,7 @@ export async function POST() {
 
     return NextResponse.json({
       ...result,
-      message: `You rested at home and woke up at 06:00. Health +${result.health > 0 ? "12 (up to 100)" : "0"}; happiness restored.`,
+      message: `You rested at home and woke up at 06:00. Health +${Math.min(12, 100 - (result.health - 12))}; happiness +${Math.min(5, 100 - (result.happiness - 5))}.`,
     });
   } catch (error) {
     const code = error instanceof Error ? error.message : "UNKNOWN";
