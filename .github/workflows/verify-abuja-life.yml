@@ -9,9 +9,6 @@ on:
       - develop
       - main
 
-permissions:
-  contents: write
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -32,15 +29,6 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm install
-      - name: Save regenerated dependency lockfile
-        run: |
-          if ! git diff --quiet -- package-lock.json; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add package-lock.json
-            git commit -m "chore: regenerate package lockfile"
-            git push origin "HEAD:${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
-          fi
       - name: Generate Prisma client
         run: npx prisma generate
       - name: Build application
