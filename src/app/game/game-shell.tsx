@@ -299,17 +299,19 @@ export default function GameShell({ player }: { player: Player }) {
           />
         </div>
 
-        <div className="pointer-events-none absolute inset-x-0 top-3 flex justify-center px-3">
-          <div className="pointer-events-auto flex max-w-full items-center gap-3 rounded-2xl border border-white/15 bg-slate-950/80 px-4 py-2.5 text-white shadow-2xl backdrop-blur-xl sm:gap-4 sm:px-6">
-            <div className="hidden text-sm font-bold sm:block">{currentPoi ?? currentArea} · Abuja</div>
-            <span className="hidden h-5 w-px bg-slate-200 sm:block" />
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Mood</span>
-            <span className="text-sm font-black text-emerald-300">{happiness >= 80 ? "Very Happy" : happiness >= 55 ? "Good" : "Low"}</span>
-            <span className="hidden h-5 w-px bg-slate-200 sm:block" />
-            <span className="text-[10px] font-semibold text-slate-300">Fitness {fitness}</span>
-            <span className="hidden h-5 w-px bg-slate-200 sm:block" />
-            <span className="whitespace-nowrap text-sm font-black text-amber-300">₦{cash}</span>
-            <button onClick={() => setActivityOpen(true)} className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-lg font-black text-white shadow-sm" aria-label="Open activities">+</button>
+        <div className="pointer-events-none absolute inset-x-3 top-3 z-20 flex flex-wrap items-start justify-between gap-2 sm:inset-x-5 sm:top-5">
+          <div className="pointer-events-auto max-w-[55vw] rounded-2xl border border-white/15 bg-slate-950/80 px-3 py-2.5 text-white shadow-2xl backdrop-blur-xl sm:max-w-sm sm:px-4">
+            <p className="text-[9px] font-black uppercase tracking-[0.22em] text-emerald-300">ABUJA LIFE <span className="text-white/40">/ LIVE WORLD</span></p>
+            <p className="mt-0.5 truncate text-sm font-black sm:text-base">{currentPoi ?? currentArea}</p>
+            <p className="mt-0.5 text-[10px] text-slate-300">{worldScene === "home" ? "Home" : worldScene === "mosque" ? "Mosque courtyard" : "Abuja, FCT"} · {travelling ? "On the move…" : "Free roam"}</p>
+          </div>
+          <div className="pointer-events-auto flex max-w-[72vw] items-center gap-2 rounded-2xl border border-white/15 bg-slate-950/80 px-2.5 py-2 text-white shadow-2xl backdrop-blur-xl sm:gap-4 sm:px-4">
+            <div><p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Mood</p><p className="text-xs font-black text-emerald-300 sm:text-sm">{happiness >= 80 ? "Very Happy" : happiness >= 55 ? "Good" : "Low"}</p></div>
+            <span className="h-7 w-px bg-white/15" />
+            <div><p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Fitness</p><p className="text-xs font-black sm:text-sm">{fitness}/100</p></div>
+            <span className="h-7 w-px bg-white/15" />
+            <div><p className="text-[9px] font-bold uppercase tracking-wider text-amber-300">Wallet</p><p className="whitespace-nowrap text-xs font-black sm:text-sm">₦{cash}</p></div>
+            <button onClick={() => setActivityOpen(true)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-400 text-lg font-black text-slate-950 shadow-sm transition hover:bg-emerald-300" aria-label="Open activities">+</button>
           </div>
         </div>
 
@@ -442,13 +444,13 @@ export default function GameShell({ player }: { player: Player }) {
           </section>
         </div>}
 
-        <nav className="absolute bottom-3 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1 rounded-2xl border border-white/80 bg-white/95 p-1.5 shadow-xl backdrop-blur">
-          <button onClick={() => { setWorldScene(currentArea === player.homeArea ? "home" : "street"); setCurrentPoi(null); setMapOpen(false); setActivityOpen(false); setPhoneOpen(false); }} className="flex min-w-[68px] flex-col items-center gap-1 rounded-xl bg-slate-900 px-4 py-2 text-white"><Home size={18} /><span className="text-[10px] font-bold">World</span></button>
-          <button onClick={() => { setActivityOpen(false); setPhoneOpen(false); setMapOpen(true); }} className="flex min-w-[68px] flex-col items-center gap-1 rounded-xl px-4 py-2 text-slate-600 hover:bg-slate-100"><Map size={18} /><span className="text-[10px] font-bold">Map</span></button>
-          <button onClick={() => { setPhoneOpen(true); setActivityOpen(false); }} className="flex min-w-[68px] flex-col items-center gap-1 rounded-xl px-4 py-2 text-slate-600 hover:bg-slate-100"><Smartphone size={18} /><span className="text-[10px] font-bold">Phone</span></button>
-          <button onClick={() => { setActivityOpen(true); setPhoneOpen(false); }} className="flex min-w-[68px] flex-col items-center gap-1 rounded-xl px-4 py-2 text-slate-600 hover:bg-slate-100"><Activity size={18} /><span className="text-[10px] font-bold">Activities</span></button>
+        <nav aria-label="Life simulator controls" className="absolute bottom-3 left-1/2 z-30 flex max-w-[calc(100vw-20px)] -translate-x-1/2 items-center gap-1 rounded-[22px] border border-white/15 bg-slate-950/90 p-1.5 text-white shadow-2xl backdrop-blur-xl sm:bottom-5 sm:gap-2 sm:p-2">
+          <button onClick={() => { setWorldScene(currentArea === player.homeArea ? "home" : "street"); setCurrentPoi(null); setMapOpen(false); setActivityOpen(false); setPhoneOpen(false); }} className="flex min-w-[61px] flex-col items-center gap-1 rounded-2xl bg-emerald-400 px-3 py-2 text-slate-950 transition hover:bg-emerald-300 sm:min-w-[76px] sm:px-4"><Home size={18} /><span className="text-[10px] font-black">World</span></button>
+          <button onClick={() => { setActivityOpen(false); setPhoneOpen(false); setMapOpen(true); }} className="flex min-w-[61px] flex-col items-center gap-1 rounded-2xl px-3 py-2 text-slate-300 transition hover:bg-white/10 hover:text-white sm:min-w-[76px] sm:px-4"><Map size={18} /><span className="text-[10px] font-bold">Map</span></button>
+          <button onClick={() => { setPhoneOpen(true); setActivityOpen(false); }} className="flex min-w-[61px] flex-col items-center gap-1 rounded-2xl px-3 py-2 text-slate-300 transition hover:bg-white/10 hover:text-white sm:min-w-[76px] sm:px-4"><Smartphone size={18} /><span className="text-[10px] font-bold">Phone</span></button>
+          <button onClick={() => { setActivityOpen(true); setPhoneOpen(false); }} className="flex min-w-[61px] flex-col items-center gap-1 rounded-2xl px-3 py-2 text-slate-300 transition hover:bg-white/10 hover:text-white sm:min-w-[76px] sm:px-4"><Activity size={18} /><span className="text-[10px] font-bold">Activities</span></button>
         </nav>
-        <div className="pointer-events-none absolute bottom-4 left-3 hidden rounded-xl border border-white/80 bg-white/85 px-3 py-2 text-[11px] font-semibold text-slate-600 shadow sm:block">WASD / arrow keys to move</div>
+        <div className="pointer-events-none absolute bottom-[86px] left-3 hidden rounded-xl border border-white/15 bg-slate-950/75 px-3 py-2 text-[11px] font-semibold text-white/80 shadow-lg backdrop-blur sm:bottom-5 sm:left-5 sm:block">W A S D <span className="text-white/40">/</span> Arrow keys <span className="text-white/40">·</span> Click ground to walk</div>
       </main>
     );
   }
