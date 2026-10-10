@@ -114,7 +114,7 @@ export default function GameShell({ player }: { player: Player }) {
   const [travelling, setTravelling] = useState(false);
   const [balance, setBalance] = useState(BigInt(player.walletBalance));
   const [netWorth, setNetWorth] = useState(BigInt(player.totalNetWorth));
-  const [jobs, setJobs] = useState<Array<{ title: string; category: string; location: string; payPerShift: number; shiftHours: number; opensAt?: number; closesAt?: number; minHustle?: number; minIntelligence?: number; minConnect?: number; requiresVehicle?: boolean }>>([]);
+  const [jobs, setJobs] = useState<Array<{ title: string; category: string; location: string; payPerShift: number; shiftHours: number; opensAt?: number; closesAt?: number; minHustle?: number; minIntelligence?: number; minConnect?: number; requiresVehicle?: boolean; careerRecord?: { shiftsWorked: number; totalEarned: string; performance: number } | null }>>([]);
   const [jobLoading, setJobLoading] = useState(false);
   const [jobNotice, setJobNotice] = useState("");
   const [activeJob, setActiveJob] = useState(player.currentJob);
@@ -185,15 +185,15 @@ export default function GameShell({ player }: { player: Player }) {
     if (nextView === "jobs") void loadJobs();
   }
 
-  async function loadJobs() {
+  async function loadJobs(preserveNotice = false) {
     setJobLoading(true);
     try {
       const response = await fetch("/api/game/jobs");
       const data = await response.json();
       if (response.ok) setJobs(data.jobs ?? []);
-      else setJobNotice(data.error ?? "Could not load jobs.");
+      else if (!preserveNotice) setJobNotice(data.error ?? "Could not load jobs.");
     } catch {
-      setJobNotice("Could not connect to the jobs board.");
+      if (!preserveNotice) setJobNotice("Could not connect to the jobs board.");
     } finally {
       setJobLoading(false);
     }
@@ -231,6 +231,7 @@ export default function GameShell({ player }: { player: Player }) {
         setPerformanceScore(data.performanceScore);
         setJobNotice(`${data.message} Career performance +${data.performanceGain}.`);
         void refreshGameClock();
+        await loadJobs(true);
       } else {
         setJobNotice(data.error ?? "Could not complete shift.");
         if (data.requiredArea) setJobNotice(data.error + " Use the Map to travel there, then return to Jobs.");
@@ -670,6 +671,7 @@ export default function GameShell({ player }: { player: Player }) {
                     </div>
                   <p className="mt-4 text-xl font-black">₦{job.payPerShift.toLocaleString()} <span className="text-xs font-semibold text-slate-400">/ shift</span></p>
                   <p className="mt-2 text-xs text-slate-500">Requirements: Hustle {job.minHustle ?? 0} · Intelligence {job.minIntelligence ?? 0} · Connection {job.minConnect ?? 0}{job.requiresVehicle ? " · Vehicle" : ""}</p>
+                  {job.careerRecord && <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">Your record: {job.careerRecord.shiftsWorked} shift{job.careerRecord.shiftsWorked === 1 ? "" : "s"} · ₦{Number(job.careerRecord.totalEarned).toLocaleString()} earned · +{job.careerRecord.performance} performance</p>}
                   <p className={"mt-3 rounded-lg px-3 py-2 text-xs font-bold " + statusStyle} aria-live="polite">{shiftStatus}</p>
                   <button onClick={() => applyForJob(job.title)} disabled={jobLoading || activeJob === job.title || job.payPerShift <= 0} className="mt-4 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">{jobLoading ? "Processing..." : job.payPerShift <= 0 ? "Coming soon" : activeJob === job.title ? "Current job" : "Apply"}</button>
                   </div>;
