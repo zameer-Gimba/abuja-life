@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getLagosDayStart } from "@/lib/lagos-day";
 
 const ACTIVITIES = {
   walk: {
@@ -90,8 +91,7 @@ export async function POST(request: Request) {
   const key = activity as ActivityKey;
   const config = ACTIVITIES[key];
   const now = new Date();
-  const dayStart = new Date(now);
-  dayStart.setHours(0, 0, 0, 0);
+  const dayStart = getLagosDayStart(now);
 
   try {
     const result = await db.$transaction(async (tx) => {
