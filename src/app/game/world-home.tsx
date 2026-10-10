@@ -661,7 +661,7 @@ function StreetScene({ look, area, onPosition, moveTarget, onNpcSelect, isNight,
         <mesh position={[0.54, 2.45, 0]}><boxGeometry args={[0.25, 0.12, 0.18]} /><meshStandardMaterial color="#f2df9f" emissive="#f2df9f" emissiveIntensity={0.3} /></mesh>
       </group>
       {vehicles.map((vehicle) => <MovingCar key={vehicle.startX + ":" + vehicle.z} {...vehicle} />)}
-      {!isQuiet && (!isNight || isWuse || isCentral) && <><KekeNapep startX={-2} z={-1.32} speed={isNight ? 0.95 : 1.25} /><KekeNapep startX={12} z={1.42} speed={isNight ? -0.8 : -1.05} /></>}
+      {!isQuiet && (!isNight || isWuse || isCentral) && <><KekeNapep startX={-2} z={-1.32} speed={isNight ? 0.95 : 1.25} /><KekeNapep startX={12} z={1.42} speed={isNight ? -0.8 : -1.05} />{isRushHour && <KekeNapep startX={-14} z={-1.32} speed={1.05} />}</>}
       {people.map((person) => { const identity = getStreetNpcIdentity(area, person.x, person.z); return <AmbientPedestrian key={identity.id} {...person} {...identity} onSelect={onNpcSelect} />; })}
       <Character look={look} onPosition={onPosition} moveTarget={moveTarget} streetMode showCrown />
       <Text position={[0, 3.8, -5.4]} rotation={[0, 0, 0]} fontSize={0.38} color="#153c37" anchorX="center">{streetLabel}</Text>
