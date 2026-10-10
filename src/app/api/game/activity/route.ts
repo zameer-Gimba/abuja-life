@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getLagosDayStart } from "@/lib/lagos-day";
+import { advanceGameClock } from "@/lib/game-clock";
 
 const ACTIVITIES = {
   walk: {
@@ -72,6 +73,18 @@ const ACTIVITIES = {
 
 type ActivityKey = keyof typeof ACTIVITIES;
 
+const ACTIVITY_GAME_MINUTES: Record<ActivityKey, number> = {
+  walk: 20,
+  dance: 15,
+  eat: 20,
+  call_mummy: 10,
+  greet_neighbour: 5,
+  pray_salah: 10,
+  perform_wudu: 5,
+  read_quran: 30,
+  give_sadaqah: 2,
+};
+
 function clampStat(value: number) {
   return Math.max(0, Math.min(100, value));
 }
@@ -95,6 +108,7 @@ export async function POST(request: Request) {
 
   try {
     const result = await db.$transaction(async (tx) => {
+      await tx.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "players" WHERE "id" = ${playerId} FOR UPDATE`;
       const player = await tx.player.findUnique({
         where: { id: playerId },
         select: {
@@ -140,8 +154,7 @@ export async function POST(request: Request) {
 
       const balanceBefore = player.walletBalance;
       const balanceAfter = balanceBefore - cost + BigInt(config.reward);
-      const bankAndSavings = player.bankBalance + player.savingsBalance + player.bondsBalance;
-      const netWorthAfter = balanceAfter + bankAndSavings;
+      const netWorthAfter = player.totalNetWorth - cost + BigInt(config.reward);
 
       const updated = await tx.player.update({
         where: { id: playerId },
@@ -211,6 +224,7 @@ export async function POST(request: Request) {
           data: statChanges,
         },
       });
+      await advanceGameClock(tx, playerId, ACTIVITY_GAME_MINUTES[key], `activity_${key}`);
 
       return { ...updated, message, activity: key, activityLabel: config.label, reward: config.reward, cost: config.cost };
     });
