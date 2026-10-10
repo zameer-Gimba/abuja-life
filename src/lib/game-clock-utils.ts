@@ -67,9 +67,22 @@ export function isWithinOpeningWindow(
   minuteOfDay: number,
   opensAtHour: number,
   shiftHours: number,
+  closesAtHour?: number,
 ): boolean {
   const openingMinute = (((opensAtHour % 24) + 24) % 24) * 60;
   const elapsedSinceOpening = (minuteOfDay - openingMinute + 1440) % 1440;
-  const openingWindowMinutes = Math.max(shiftHours, 8) * 60;
-  return elapsedSinceOpening + shiftHours * 60 <= openingWindowMinutes;
+
+  let openingWindowMinutes: number;
+  if (closesAtHour !== undefined) {
+    const closingMinute = (((closesAtHour % 24) + 24) % 24) * 60;
+    openingWindowMinutes = (closingMinute - openingMinute + 1440) % 1440;
+    if (openingWindowMinutes === 0) openingWindowMinutes = 1440;
+  } else {
+    openingWindowMinutes = Math.max(shiftHours, 8) * 60;
+  }
+
+  return (
+    elapsedSinceOpening < openingWindowMinutes &&
+    elapsedSinceOpening + shiftHours * 60 <= openingWindowMinutes
+  );
 }
