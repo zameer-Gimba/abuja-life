@@ -46,7 +46,7 @@ export async function POST() {
       };
       const requiredArea = requiredAreaByJob[job.title];
       if (requiredArea && player.currentArea !== requiredArea) {
-        throw new Error("WORKPLACE_" + requiredArea.toUpperCase().replace(/\\s+/g, "_"));
+        throw new Error("WORKPLACE_" + requiredArea.toUpperCase().replace(/\s+/g, "_"));
       }
 
       const pay = BigInt(job.payPerShift ?? 0);
