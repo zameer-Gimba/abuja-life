@@ -122,7 +122,7 @@ export default function GameShell({ player }: { player: Player }) {
   const [connection, setConnection] = useState(player.connectLevel);
   const [hasVehicle, setHasVehicle] = useState(player.hasVehicle);
   const [vehicleFuel, setVehicleFuel] = useState(player.vehicleFuel);
-  const [worldScene, setWorldScene] = useState<"home" | "street" | "mosque">("home");
+  const [worldScene, setWorldScene] = useState<"home" | "street" | "mosque">(player.currentArea === player.homeArea ? "home" : "street");
   const [mapOpen, setMapOpen] = useState(false);
   const [currentPoi, setCurrentPoi] = useState<string | null>(null);
   const [journeyMessage, setJourneyMessage] = useState<string | null>(null);
