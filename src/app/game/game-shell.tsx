@@ -610,8 +610,7 @@ export default function GameShell({ player }: { player: Player }) {
                 </div>
               </div>
             </div>
-                </div>;
-                })}
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{facilities.map(([label,Icon,note]) => <div key={String(label)} className="rounded-2xl border border-slate-200 bg-white p-5"><Icon className="text-blue-600" size={20} /><p className="mt-4 font-black">{String(label)}</p><p className="mt-1 text-xs leading-5 text-slate-500">{String(note)}</p></div>)}</div>
           </div>}
 
           {view === "jobs" && <div className="space-y-5">
@@ -667,7 +666,8 @@ export default function GameShell({ player }: { player: Player }) {
                   <p className="mt-2 text-xs text-slate-500">Requirements: Hustle {job.minHustle ?? 0} · Intelligence {job.minIntelligence ?? 0} · Connection {job.minConnect ?? 0}{job.requiresVehicle ? " · Vehicle" : ""}</p>
                   <p className={"mt-3 rounded-lg px-3 py-2 text-xs font-bold " + statusStyle} aria-live="polite">{shiftStatus}</p>
                   <button onClick={() => applyForJob(job.title)} disabled={jobLoading} className="mt-4 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold hover:bg-slate-50 disabled:cursor-wait disabled:opacity-60">{jobLoading ? "Processing..." : activeJob === job.title ? "Current job" : "Apply"}</button>
-                </div>)}
+                  </div>;
+                })}
               </div>
               {!jobs.length && <p className="mt-6 text-sm text-slate-500">Select Jobs and refresh the board to load available work.</p>}
             </div>
