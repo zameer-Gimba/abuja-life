@@ -21,16 +21,16 @@ export async function GET() {
       orderBy: { startedAt: "desc" },
     });
 
-    const historyByTitle = new Map(
-      history.map((record) => [
-        record.job.title,
-        {
-          shiftsWorked: record.shiftsWorked,
-          totalEarned: record.totalEarned.toString(),
-          performance: record.performance,
-        },
-      ]),
-    );
+    const historyByTitle = new Map<string, { shiftsWorked: number; totalEarned: string; performance: number }>();
+    // Aggregate any legacy duplicate records rather than hiding part of a player's career.
+    for (const record of history) {
+      const previous = historyByTitle.get(record.job.title);
+      historyByTitle.set(record.job.title, {
+        shiftsWorked: (previous?.shiftsWorked ?? 0) + record.shiftsWorked,
+        totalEarned: (BigInt(previous?.totalEarned ?? "0") + record.totalEarned).toString(),
+        performance: (previous?.performance ?? 0) + record.performance,
+      });
+    }
 
     return NextResponse.json({
       jobs: JOBS.map((job) => ({
