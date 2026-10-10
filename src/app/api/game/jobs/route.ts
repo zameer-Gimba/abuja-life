@@ -14,6 +14,7 @@ export async function GET() {
       location: job.location,
       payPerShift: job.payPerShift,
       shiftHours: job.shiftHours,
+      opensAt: job.opensAt,
       minHustle: job.minHustle ?? 0,
       minIntelligence: job.minIntelligence ?? 0,
       minConnect: job.minConnect ?? 0,
