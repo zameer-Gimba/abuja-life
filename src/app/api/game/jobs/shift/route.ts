@@ -3,6 +3,18 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { JOBS } from "@/constants/game";
+import { advanceGameClock, formatGameTime, getGameClock, isWithinOpeningWindow } from "@/lib/game-clock";
+
+const REQUIRED_AREA_BY_JOB: Record<string, string> = {
+  "Flyer Distributor": "Wuse 2",
+  "Suya Spot Attendant": "Wuse 2",
+  "Shop Assistant": "Wuse 2",
+  "Restaurant Staff": "Jabi",
+  "Hotel Staff": "Central Area",
+  "Bank Teller": "Garki",
+  "Junior Civil Servant": "Garki",
+  "Hype Man": "Wuse 2",
+};
 
 export async function POST() {
   const session = await getServerSession(authOptions);
@@ -11,6 +23,9 @@ export async function POST() {
 
   try {
     const result = await db.$transaction(async (tx) => {
+      // Prevent two rapid requests from paying for the same career state concurrently.
+      await tx.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "players" WHERE "id" = ${playerId} FOR UPDATE`;
+
       const player = await tx.player.findUnique({
         where: { id: playerId },
         select: {
@@ -21,6 +36,7 @@ export async function POST() {
           bankBalance: true,
           savingsBalance: true,
           bondsBalance: true,
+          totalNetWorth: true,
           hustle: true,
           intelligence: true,
           connectLevel: true,
@@ -35,27 +51,28 @@ export async function POST() {
       const job = JOBS.find((item) => item.title === player.currentJob);
       if (!job) throw new Error("JOB_NOT_FOUND");
 
-      const requiredAreaByJob: Record<string, string> = {
-        "Flyer Distributor": "Wuse 2",
-        "Suya Spot Attendant": "Wuse 2",
-        "Shop Assistant": "Wuse 2",
-        "Restaurant Staff": "Jabi",
-        "Hotel Staff": "Central Area",
-        "Bank Teller": "Garki",
-        "Junior Civil Servant": "Garki",
-        "Hype Man": "Wuse 2",
-      };
-      const requiredArea = requiredAreaByJob[job.title];
+      const requiredArea = REQUIRED_AREA_BY_JOB[job.title];
       if (requiredArea && player.currentArea !== requiredArea) {
-        throw new Error("WORKPLACE_" + requiredArea.toUpperCase().replace(/\s+/g, "_"));
+        throw new Error("WORKPLACE_AREA:" + requiredArea);
+      }
+
+      const clock = await getGameClock(tx, player.id);
+      if (
+        typeof job.opensAt === "number" &&
+        !isWithinOpeningWindow(clock.minuteOfDay, job.opensAt, job.shiftHours ?? 1)
+      ) {
+        throw new Error(`JOB_NOT_OPEN_${job.opensAt}_${clock.minuteOfDay}`);
       }
 
       const pay = BigInt(job.payPerShift ?? 0);
       if (pay <= 0n) throw new Error("COMMISSION_JOB");
 
       const balanceAfter = player.walletBalance + pay;
-      const netWorthAfter = balanceAfter + player.bankBalance + player.savingsBalance + player.bondsBalance;
-      const performanceGain = Math.max(1, Math.floor((player.hustle + player.intelligence + player.connectLevel) / 30));
+      const netWorthAfter = player.totalNetWorth + pay;
+      const performanceGain = Math.max(
+        1,
+        Math.floor((player.hustle + player.intelligence + player.connectLevel) / 30),
+      );
 
       await tx.player.update({
         where: { id: player.id },
@@ -123,6 +140,8 @@ export async function POST() {
         },
       });
 
+      await advanceGameClock(tx, player.id, job.shiftHours ?? 0, "job_shift");
+
       return {
         walletBalance: balanceAfter.toString(),
         totalNetWorth: netWorthAfter.toString(),
@@ -143,9 +162,19 @@ export async function POST() {
     if (code === "NO_JOB") return NextResponse.json({ error: "Choose a job first." }, { status: 400 });
     if (code === "JOB_NOT_FOUND") return NextResponse.json({ error: "Your current job is no longer available." }, { status: 400 });
     if (code === "COMMISSION_JOB") return NextResponse.json({ error: "This is a commission-based role. Its payout system comes in the next jobs expansion." }, { status: 400 });
-    if (code.startsWith("WORKPLACE_")) {
-      const area = code.slice("WORKPLACE_".length).replace(/_/g, " ");
-      return NextResponse.json({ error: "Travel to " + area + " before starting this shift.", requiredArea: area }, { status: 400 });
+    if (code.startsWith("WORKPLACE_AREA:")) {
+      const area = code.slice("WORKPLACE_AREA:".length);
+      return NextResponse.json({ error: `Travel to ${area} before starting this shift.`, requiredArea: area }, { status: 400 });
+    }
+    const notOpen = code.match(/^JOB_NOT_OPEN_(\d+)_(\d+)$/);
+    if (notOpen) {
+      const opensAt = Number(notOpen[1]);
+      const currentTime = formatGameTime(Number(notOpen[2]));
+      return NextResponse.json({
+        error: `This shift opens at ${String(opensAt).padStart(2, "0")}:00. Current in-game time is ${currentTime}.`,
+        opensAt,
+        currentTime,
+      }, { status: 400 });
     }
     return NextResponse.json({ error: "Could not complete the shift." }, { status: 500 });
   }
