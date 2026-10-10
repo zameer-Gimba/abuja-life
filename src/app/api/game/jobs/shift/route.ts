@@ -35,6 +35,13 @@ export async function POST() {
 
       const job = JOBS.find((item) => item.title === player.currentJob);
       if (!job) throw new Error("JOB_NOT_FOUND");
+      // Enforce advertised opening times in Abuja local time, regardless of server timezone.
+      if (typeof job.opensAt === "number") {
+        const localHour = Number(new Intl.DateTimeFormat("en-GB", {
+          timeZone: "Africa/Lagos", hour: "2-digit", hourCycle: "h23",
+        }).format(new Date()));
+        if (localHour < job.opensAt) throw new Error("JOB_NOT_OPEN");
+      }
       if (player.hustle < (job.minHustle ?? 0)) throw new Error("HUSTLE_TOO_LOW");
       if (player.intelligence < (job.minIntelligence ?? 0)) throw new Error("INTELLIGENCE_TOO_LOW");
       if (player.connectLevel < (job.minConnect ?? 0)) throw new Error("CONNECTION_TOO_LOW");
@@ -137,6 +144,7 @@ export async function POST() {
     if (code === "PLAYER_NOT_FOUND") return NextResponse.json({ error: "Player not found." }, { status: 404 });
     if (code === "NO_JOB") return NextResponse.json({ error: "Choose a job first." }, { status: 400 });
     if (code === "JOB_NOT_FOUND") return NextResponse.json({ error: "Your current job is no longer available." }, { status: 400 });
+    if (code === "JOB_NOT_OPEN") return NextResponse.json({ error: "This role has not opened yet. Come back after its advertised opening time in Abuja." }, { status: 400 });
     if (code === "COMMISSION_JOB") return NextResponse.json({ error: "This is a commission-based role. Its payout system comes in the next jobs expansion." }, { status: 400 });
     if (code === "HUSTLE_TOO_LOW") return NextResponse.json({ error: "Your Hustle no longer meets this job's requirements." }, { status: 400 });
     if (code === "INTELLIGENCE_TOO_LOW") return NextResponse.json({ error: "Your Intelligence no longer meets this job's requirements." }, { status: 400 });
