@@ -154,7 +154,9 @@ export default function GameShell({ player }: { player: Player }) {
       .then((response) => response.ok ? response.json() : Promise.reject(new Error("Contacts unavailable")))
       .then((data: { contacts?: Array<{ id: string; name: string; greetings: number; lastSeenAt: string }> }) => {
         if (!active) return;
-        const contact = data.contacts?.find((item) => item.id === selectedNpc.id || item.name === selectedNpc.name);
+        const contacts = data.contacts ?? [];
+        const contact = contacts.find((item) => item.id === selectedNpc.id)
+          ?? contacts.find((item) => item.id.startsWith("legacy:") && item.name === selectedNpc.name);
         setNpcHistory(contact ? { greetings: contact.greetings, lastSeenAt: contact.lastSeenAt } : { greetings: 0, lastSeenAt: "" });
       })
       .catch(() => { if (active) setNpcHistory({ greetings: 0, lastSeenAt: "" }); });
@@ -167,7 +169,7 @@ export default function GameShell({ player }: { player: Player }) {
     setContactsLoading(true);
     fetch("/api/game/social")
       .then((response) => response.ok ? response.json() : Promise.reject(new Error("Contacts unavailable")))
-      .then((data: { contacts?: Array<{ name: string; greetings: number; lastSeenAt: string }> }) => {
+      .then((data: { contacts?: Array<{ id: string; name: string; greetings: number; lastSeenAt: string }> }) => {
         if (active) setSavedContacts(data.contacts ?? []);
       })
       .catch(() => { if (active) setSavedContacts([]); })
