@@ -180,6 +180,20 @@ export default function GameShell({ player }: { player: Player }) {
   const cash = useMemo(() => Number(balance).toLocaleString(), [balance]);
   const displayedNetWorth = useMemo(() => Number(netWorth).toLocaleString(), [netWorth]);
   const currentJob = player.currentJob;
+  const careerRanks = [
+    { name: "Rookie", threshold: 0 },
+    { name: "Reliable", threshold: 5 },
+    { name: "Skilled", threshold: 15 },
+    { name: "Professional", threshold: 30 },
+    { name: "Elite", threshold: 50 },
+  ];
+  const careerRankIndex = careerRanks.reduce((highest, rank, index) =>
+    performanceScore >= rank.threshold ? index : highest, 0);
+  const careerRank = careerRanks[careerRankIndex];
+  const nextCareerRank = careerRanks[careerRankIndex + 1];
+  const careerRankProgress = nextCareerRank
+    ? Math.min(100, Math.round(((performanceScore - careerRank.threshold) / (nextCareerRank.threshold - careerRank.threshold)) * 100))
+    : 100;
   const activeJobDetails = jobs.find((job) => job.title === activeJob);
   const activeJobWorkplace = activeJob ? JOB_WORKPLACE_AREAS[activeJob] : undefined;
   const activeJobShiftOpen = gameClock.loaded && (activeJobDetails?.opensAt === undefined
@@ -652,7 +666,7 @@ export default function GameShell({ player }: { player: Player }) {
               </div>
               <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <div className="rounded-2xl bg-slate-950 p-4 text-white"><p className="text-[10px] font-bold uppercase tracking-wider text-blue-300">Shifts completed</p><p className="mt-1 text-2xl font-black">{shiftsCompleted}</p></div>
-                <div className="rounded-2xl bg-emerald-50 p-4 text-emerald-950"><p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Career performance</p><p className="mt-1 text-2xl font-black">{performanceScore}</p></div>
+                <div className="rounded-2xl bg-emerald-50 p-4 text-emerald-950"><div className="flex items-start justify-between gap-2"><div><p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Career performance</p><p className="mt-1 text-2xl font-black">{performanceScore}</p></div><span className="rounded-full bg-white/80 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-800">{careerRank.name}</span></div><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-emerald-200" role="progressbar" aria-label="Progress to next career rank" aria-valuemin={0} aria-valuemax={100} aria-valuenow={careerRankProgress}><div className="h-full rounded-full bg-emerald-700 transition-all" style={{ width: `${careerRankProgress}%` }} /></div><p className="mt-2 text-[10px] font-semibold text-emerald-800">{nextCareerRank ? `${nextCareerRank.threshold - performanceScore} points to ${nextCareerRank.name}` : "Highest career rank reached"}</p></div>
                 <div className="col-span-2 rounded-2xl border border-slate-200 p-4 sm:col-span-1"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Career tip</p><p className="mt-1 text-xs leading-5 text-slate-600">Each completed shift adds to your work record and improves your performance score.</p></div>
               </div>
               {jobNotice && <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800">{jobNotice}</div>}
