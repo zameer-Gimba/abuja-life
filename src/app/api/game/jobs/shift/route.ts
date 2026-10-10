@@ -172,8 +172,7 @@ export async function POST() {
     if (notOpen) {
       const opensAt = Number(notOpen[1]);
       const configuredClose = Number(notOpen[2]);
-      const shiftHours = Math.max(1, Number(JOBS.find((job) => job.title === "Hype Man")?.shiftHours ?? 1));
-      const closesAt = configuredClose >= 0 ? configuredClose : (opensAt + Math.max(shiftHours, 8)) % 24;
+      const closesAt = configuredClose >= 0 ? configuredClose : (opensAt + 8) % 24;
       const currentTime = formatGameTime(Number(notOpen[3]));
       const openingTime = `${String(opensAt).padStart(2, "0")}:00`;
       const closingTime = `${String(closesAt).padStart(2, "0")}:00`;
