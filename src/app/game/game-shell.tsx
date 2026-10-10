@@ -298,6 +298,29 @@ export default function GameShell({ player }: { player: Player }) {
     }
   }
 
+  async function sleepAtHome() {
+    if (activityBusy || !gameClock.isNight || worldScene !== "home" || currentArea !== player.homeArea) return;
+    setActivityBusy(true);
+    setActivityToast("");
+    try {
+      const response = await fetch("/api/game/sleep", { method: "POST" });
+      const data = await response.json();
+      if (!response.ok) {
+        setActivityToast(data.error ?? "You could not rest right now.");
+        return;
+      }
+      setHealth(data.health);
+      setHappiness(data.happiness);
+      setActivityToast(data.message);
+      setNotice(data.message);
+      await gameClock.refresh();
+    } catch {
+      setActivityToast("Could not connect to the rest service.");
+    } finally {
+      setActivityBusy(false);
+    }
+  }
+
   async function performActivity(activity: "walk" | "dance" | "eat" | "call_mummy" | "greet_neighbour" | "pray_salah" | "perform_wudu" | "read_quran" | "give_sadaqah", targetName?: string) {
     if (activityBusy) return;
     setActivityBusy(true);
@@ -370,6 +393,10 @@ export default function GameShell({ player }: { player: Player }) {
             <span className="block text-xs font-black">Eat something</span>
             <span className="mt-1 block text-[11px] text-slate-300">Meal costs ₦180 · restores health</span>
           </button>
+          {worldScene === "home" && <button onClick={() => void sleepAtHome()} disabled={activityBusy || !gameClock.isNight || currentArea !== player.homeArea} className="rounded-2xl border border-amber-200/30 bg-slate-950/80 p-3 text-left text-white shadow-xl backdrop-blur transition hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-55">
+            <span className="block text-xs font-black">{gameClock.isNight ? "Sleep until 06:00" : "Rest after dark"}</span>
+            <span className="mt-1 block text-[11px] text-slate-300">{gameClock.isNight ? "Rest at home and wake up in the morning" : "Sleep becomes available at night"}</span>
+          </button>}
           <div className="rounded-2xl border border-white/15 bg-slate-950/75 p-3 text-white shadow-xl backdrop-blur">
             <div className="mb-2 flex items-center justify-between text-[11px] font-bold text-slate-200"><span>Health</span><span>{health}/100</span></div>
             <div className="h-1.5 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-rose-500 transition-all" style={{ width: `${health}%` }} /></div>
