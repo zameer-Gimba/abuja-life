@@ -130,7 +130,7 @@ export async function POST(request: Request) {
             amount: BigInt(reward),
             description: `Fitness reward for trekking from ${player.currentArea} to ${destination}.`,
             category: "daily_activity",
-            balanceBefore: player.walletBalance,
+            balanceBefore: player.walletBalance - costBigInt,
             balanceAfter,
           },
         });
